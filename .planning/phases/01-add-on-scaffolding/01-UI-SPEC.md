@@ -1,7 +1,8 @@
 ---
 phase: 1
 slug: add-on-scaffolding
-status: draft
+status: approved
+reviewed_at: 2026-04-14
 shadcn_initialized: false
 preset: none
 created: 2026-04-14
@@ -62,15 +63,18 @@ Exceptions:
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Body | 14px | 400 | 1.5 | General text, labels |
-| Label | 12px | 500 | 1.4 | Nav item labels, secondary metadata |
-| Heading | 20px | 600 | 1.2 | Page/section title (e.g. "Inventory") |
-| Display | 28px | 700 | 1.1 | Reserved — not used in Phase 1 |
+| Body | 14px | 400 | 1.5 | General text, stub page body |
+| Label | 12px | 600 | 1.4 | Nav item labels (active and inactive), secondary metadata |
+| Heading | 20px | 600 | 1.2 | Page/section title (e.g. "Inventory"), app name in sidebar |
 
-**Declared sizes:** 12, 14, 20, 28 (4 sizes)
-**Declared weights:** 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+**Declared sizes:** 12, 14, 20 (3 sizes)
+**Declared weights:** 400 (regular), 600 (semibold)
 
-Note: 500 (medium) is used only for nav labels. If the system font renders 500 as identical to 400, substitute 600 for nav labels. Do not introduce additional weights.
+Weight assignments:
+- 400 (regular): Body text, stub page placeholder paragraphs
+- 600 (semibold): All nav item labels (active and inactive), page headings, app name "Inventar"
+
+Note: Display size (28px) is out of scope for Phase 1. It will be declared in Phase 2 if a display-level heading is needed.
 
 ---
 
@@ -103,15 +107,15 @@ These are the only UI elements Phase 1 must implement. No additional components.
 **Structure:** Fixed left sidebar (220px) + scrollable main content area (fills remaining width)
 
 **Sidebar contains:**
-- App name "Inventar" as text heading (16px, weight 600, text-primary)
+- App name "Inventar" as text heading (20px, weight 600, text-primary)
 - Three nav items (Inventory, Shopping List, Settings) stacked vertically
-- Each nav item: icon (20px) + label (12px, weight 500) + 44px min-height touch target
+- Each nav item: icon (20px) + label (12px, weight 600) + 44px min-height touch target
 
 **Main content area contains:**
 - Page heading (20px, weight 600) matching the active route name
 - Empty body — no content in Phase 1
 
-**Responsive behavior:** Phase 1 is desktop-first (HA sidebar panel). Mobile layout is deferred to Phase 2. On viewports below 600px, the sidebar collapses to icon-only (icons remain, labels hidden). This prevents complete breakage on mobile HA access without requiring full mobile UX work.
+**Responsive behavior:** Phase 1 is desktop-first (HA sidebar panel). Mobile layout is deferred to Phase 2. On viewports below 600px, the sidebar collapses to icon-only: icons remain visible; nav labels are hidden via CSS (`sr-only` class or `visibility: hidden`) so they remain in the DOM and accessible to screen readers on mobile HA access. Do NOT remove nav label elements from the DOM on narrow viewports.
 
 ### NavItem
 
@@ -176,6 +180,7 @@ These are the only UI elements Phase 1 must implement. No additional components.
 - `aria-current="page"` on the active NavLink (react-router-dom NavLink handles this automatically)
 - `aria-label="Main navigation"` on the `<nav>` element
 - All nav icons must have `aria-hidden="true"` (decorative — label provides the accessible name)
+- Nav labels hidden on narrow viewports via CSS only (`sr-only` / `visibility: hidden`) — label elements remain in the DOM so screen readers on mobile can still announce nav item names
 - No `role` overrides unless required by a specific deviation from semantic HTML
 
 ---
@@ -229,4 +234,6 @@ No third-party component registries are used in Phase 1.
 
 *Phase: 01-add-on-scaffolding*
 *UI-SPEC created: 2026-04-14*
+*UI-SPEC revised: 2026-04-14 — collapsed type weights from 4 to 2 (removed 500 and 700); added sr-only mobile nav label accessibility requirement*
+*UI-SPEC revised: 2026-04-14 — fixed Typography inconsistency: AppLayout app name size changed from 16px to 20px (Heading role) to match declared type scale*
 *Source decisions: CONTEXT.md (16 decisions), RESEARCH.md (stack + architecture patterns), defaults applied for typography and color*
