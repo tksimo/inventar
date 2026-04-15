@@ -17,26 +17,26 @@
 
 - [ ] **ITEM-01**: User can add an item by scanning a barcode with the phone camera
 - [ ] **ITEM-02**: Barcode scan looks up Open Food Facts and pre-fills name, image, and nutritional data
-- [ ] **ITEM-03**: User can add an item manually (name, category, location, quantity, threshold, notes)
-- [ ] **ITEM-04**: User can edit any field of an existing item
-- [ ] **ITEM-05**: User can delete or archive an item
-- [ ] **ITEM-06**: Each item has an optional free-text notes field (e.g. "buy organic", "only from Aldi")
+- [x] **ITEM-03**: User can add an item manually (name, category, location, quantity, threshold, notes)
+- [x] **ITEM-04**: User can edit any field of an existing item
+- [x] **ITEM-05**: User can delete or archive an item
+- [x] **ITEM-06**: Each item has an optional free-text notes field (e.g. "buy organic", "only from Aldi")
 - [ ] **ITEM-07**: Item detail page shows product image and nutritional values (calories, protein, carbs, fat) sourced from Open Food Facts
 - [ ] **ITEM-08**: Items scanned from barcodes not found in Open Food Facts fall back to a manual entry form
 
 ### Quantity & Status
 
-- [ ] **QTY-01**: Each item can track an exact count (e.g. 3 cans, 500g)
-- [ ] **QTY-02**: Each item can use a status mode: Have / Running low / Out
-- [ ] **QTY-03**: User can set a reorder threshold per item; items at or below threshold are flagged
-- [ ] **QTY-04**: User can increment or decrement quantity with quick +1 / -1 buttons without opening the edit form
+- [x] **QTY-01**: Each item can track an exact count (e.g. 3 cans, 500g)
+- [x] **QTY-02**: Each item can use a status mode: Have / Running low / Out
+- [x] **QTY-03**: User can set a reorder threshold per item; items at or below threshold are flagged
+- [x] **QTY-04**: User can increment or decrement quantity with quick +1 / -1 buttons without opening the edit form
 
 ### Organisation
 
 - [x] **ORG-01**: Items are organised into categories: Food & pantry, Fridge & freezer, Cleaning & household, Personal care
-- [ ] **ORG-02**: User can create custom categories beyond the defaults
-- [ ] **ORG-03**: Each item has an assigned storage location (e.g. "kitchen top shelf", "bathroom under sink")
-- [ ] **ORG-04**: User can create, rename, and delete storage locations
+- [x] **ORG-02**: User can create custom categories beyond the defaults
+- [x] **ORG-03**: Each item has an assigned storage location (e.g. "kitchen top shelf", "bathroom under sink")
+- [x] **ORG-04**: User can create, rename, and delete storage locations
 - [x] **ORG-05**: User can filter and search inventory by storage location
 - [x] **ORG-06**: User can filter and search inventory by category
 
@@ -64,9 +64,9 @@
 
 ### Multi-User
 
-- [ ] **USER-01**: 2–3 household members share one inventory with no separate accounts (HA identity used)
+- [x] **USER-01**: 2–3 household members share one inventory with no separate accounts (HA identity used)
 - [x] **USER-02**: Each inventory change records which HA user made it and when
-- [ ] **USER-03**: All household members see inventory updates in real time (or near real time on refresh)
+- [x] **USER-03**: All household members see inventory updates in real time (or near real time on refresh)
 
 ### HA Display Integration
 
@@ -139,20 +139,20 @@
 | INFRA-05 | Phase 1 | Complete |
 | ITEM-01 | Phase 3 | Pending |
 | ITEM-02 | Phase 3 | Pending |
-| ITEM-03 | Phase 2 | Pending |
-| ITEM-04 | Phase 2 | Pending |
-| ITEM-05 | Phase 2 | Pending |
-| ITEM-06 | Phase 2 | Pending |
+| ITEM-03 | Phase 2 | Complete |
+| ITEM-04 | Phase 2 | Complete |
+| ITEM-05 | Phase 2 | Complete |
+| ITEM-06 | Phase 2 | Complete |
 | ITEM-07 | Phase 3 | Pending |
 | ITEM-08 | Phase 3 | Pending |
-| QTY-01 | Phase 2 | Pending |
-| QTY-02 | Phase 2 | Pending |
-| QTY-03 | Phase 2 | Pending |
-| QTY-04 | Phase 2 | Pending |
+| QTY-01 | Phase 2 | Complete |
+| QTY-02 | Phase 2 | Complete |
+| QTY-03 | Phase 2 | Complete |
+| QTY-04 | Phase 2 | Complete |
 | ORG-01 | Phase 2 | Complete |
-| ORG-02 | Phase 2 | Pending |
-| ORG-03 | Phase 2 | Pending |
-| ORG-04 | Phase 2 | Pending |
+| ORG-02 | Phase 2 | Complete |
+| ORG-03 | Phase 2 | Complete |
+| ORG-04 | Phase 2 | Complete |
 | ORG-05 | Phase 2 | Complete |
 | ORG-06 | Phase 2 | Complete |
 | SHOP-01 | Phase 4 | Pending |
@@ -168,9 +168,9 @@
 | RECP-03 | Phase 5 | Pending |
 | RECP-04 | Phase 5 | Pending |
 | RECP-05 | Phase 5 | Pending |
-| USER-01 | Phase 2 | Pending |
+| USER-01 | Phase 2 | Complete |
 | USER-02 | Phase 2 | Complete |
-| USER-03 | Phase 2 | Pending |
+| USER-03 | Phase 2 | Complete |
 | HA-01 | Phase 6 | Pending |
 | HA-02 | Phase 6 | Pending |
 
