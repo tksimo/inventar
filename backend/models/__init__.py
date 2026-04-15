@@ -41,6 +41,7 @@ class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
+    is_default = Column(Boolean, nullable=False, default=False)
     items = relationship("Item", back_populates="category")
 
 
