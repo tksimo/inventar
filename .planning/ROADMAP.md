@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Add-on Scaffolding** — Docker container boots, serves through HA ingress, persists data in /data
+- [x] **Phase 1: Add-on Scaffolding** — Docker container boots, serves through HA ingress, persists data in /data (completed 2026-04-15)
 - [ ] **Phase 2: Core Inventory** — Full item CRUD, categories, locations, quantity modes, multi-user attribution
 - [ ] **Phase 3: Barcode Scanning** — Camera scan, Open Food Facts lookup, scan-to-form prefill, one-tap update
 - [ ] **Phase 4: Shopping & Restock** — Reorder thresholds, auto shopping list, alerts, restock mode, share list
@@ -101,7 +101,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Add-on Scaffolding | 3/4 | In Progress|  |
+| 1. Add-on Scaffolding | 4/4 | Complete   | 2026-04-15 |
 | 2. Core Inventory | 0/? | Not started | - |
 | 3. Barcode Scanning | 0/? | Not started | - |
 | 4. Shopping & Restock | 0/? | Not started | - |

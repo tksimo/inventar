@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-04-15T11:40:25.379Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-04-15T11:46:47.118Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State: Inventar
@@ -40,7 +40,7 @@ Plan: 1 of 4
 
 **Progress:**
 
-[████████░░] 75%
+[██████████] 100%
 [          ] Phase 1: Add-on Scaffolding
 [          ] Phase 2: Core Inventory
 [          ] Phase 3: Barcode Scanning
@@ -66,6 +66,7 @@ Plan: 1 of 4
 | Phase 01 P01 | 2 | 2 tasks | 7 files |
 | Phase 01 P02 | 4 | 2 tasks | 23 files |
 | Phase 01 P03 | 6 | 2 tasks | 23 files |
+| Phase 01 P04 | 4 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -84,7 +85,7 @@ Plan: 1 of 4
 | Recipes included in v1 scope | RECP-01–05 are in REQUIREMENTS.md v1; research flags them as "validate first" |
 | Display-only HA integration (v1) | REST sensor endpoint only; no bidirectional entity push needed |
 | INVENTAR_DB_URL env var for test override | Tests never touch /data; conftest.py sets env var before any import |
-| Conditional SPA mount in main.py | StaticFiles only activated when frontend/dist/assets/ exists — backend tests pass solo |
+| Unconditional SPA mount with INVENTAR_SKIP_SPA flag | Unit tests set INVENTAR_SKIP_SPA=1 before import; integration tests clear it; RuntimeError at startup if dist/ missing |
 | All 5 v1 tables in Phase 1 migration 0001 | Phase 2+ adds zero infrastructure migrations; schema complete from day one |
 | vitest.config.js esbuild.jsx='automatic' | vitest 3.2.4 bundles vite 7 internally; @vitejs/plugin-react 6 requires vite 8; esbuild option bypasses version gap |
 | BrowserRouter test renders App directly | react-router 7 throws on nested routers; jsdom default URL is '/' so BrowserRouter matches Inventory route without MemoryRouter wrapper |
@@ -122,8 +123,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:40:25.372Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-04-15T11:46:47.113Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
 
 To resume: `/clear` then `/gsd-execute-phase 1`
