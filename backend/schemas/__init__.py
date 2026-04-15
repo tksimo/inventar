@@ -1,0 +1,19 @@
+"""Pydantic v2 schema package for the Inventar backend.
+
+Exports the canonical request/response models for all three resource types.
+"""
+from schemas.item import ItemCreate, ItemUpdate, ItemResponse
+from schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
+from schemas.location import LocationCreate, LocationUpdate, LocationResponse
+
+__all__ = [
+    "ItemCreate",
+    "ItemUpdate",
+    "ItemResponse",
+    "CategoryCreate",
+    "CategoryUpdate",
+    "CategoryResponse",
+    "LocationCreate",
+    "LocationUpdate",
+    "LocationResponse",
+]
