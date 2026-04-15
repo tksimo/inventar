@@ -36,6 +36,12 @@
   /* Layout (UI-SPEC §Spacing exceptions) */
   --sidebar-width: 220px;
   --nav-item-min-height: 44px;
+
+  /* Phase 2 — UI-SPEC §Color / §Typography */
+  --font-size-display: 28px;
+  --color-status-have: #34D399;
+  --color-status-low: #FBBF24;
+  --color-status-out: #EF4444;
 }
 
 * {
