@@ -101,7 +101,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Add-on Scaffolding | 1/4 | In Progress|  |
+| 1. Add-on Scaffolding | 3/4 | In Progress|  |
 | 2. Core Inventory | 0/? | Not started | - |
 | 3. Barcode Scanning | 0/? | Not started | - |
 | 4. Shopping & Restock | 0/? | Not started | - |
