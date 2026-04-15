@@ -9,9 +9,9 @@
 
 - [x] **INFRA-01**: App runs as a Home Assistant add-on (Docker container managed by HA Supervisor)
 - [x] **INFRA-02**: App is accessible as a panel in the HA sidebar
-- [ ] **INFRA-03**: All data is persisted in `/data` so it survives add-on updates
-- [ ] **INFRA-04**: HA ingress handles authentication — no separate login required
-- [ ] **INFRA-05**: App is accessible from a local IP:port directly (in addition to HA sidebar)
+- [x] **INFRA-03**: All data is persisted in `/data` so it survives add-on updates
+- [x] **INFRA-04**: HA ingress handles authentication — no separate login required
+- [x] **INFRA-05**: App is accessible from a local IP:port directly (in addition to HA sidebar)
 
 ### Items
 
@@ -134,9 +134,9 @@
 |-------------|-------|--------|
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Complete |
+| INFRA-04 | Phase 1 | Complete |
+| INFRA-05 | Phase 1 | Complete |
 | ITEM-01 | Phase 3 | Pending |
 | ITEM-02 | Phase 3 | Pending |
 | ITEM-03 | Phase 2 | Pending |

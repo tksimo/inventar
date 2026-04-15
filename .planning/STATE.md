@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-15T06:44:17.613Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-15T11:30:50.529Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State: Inventar
@@ -40,7 +40,7 @@ Plan: 1 of 4
 
 **Progress:**
 
-[███░░░░░░░] 25%
+[█████░░░░░] 50%
 [          ] Phase 1: Add-on Scaffolding
 [          ] Phase 2: Core Inventory
 [          ] Phase 3: Barcode Scanning
@@ -64,6 +64,7 @@ Plan: 1 of 4
 
 ---
 | Phase 01 P01 | 2 | 2 tasks | 7 files |
+| Phase 01 P02 | 4 | 2 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -78,9 +79,12 @@ Plan: 1 of 4
 | Separate items + stock tables | Clean catalog/state split; enables transaction history without complexity |
 | quantity REAL nullable + status enum | Supports both exact counts and fuzzy "have/low/out" modes from day 1 |
 | Open Food Facts proxied via backend | Consistent user-agent, server-side caching, avoids browser CORS |
-| HA ingress for auth | No separate login needed; HA session passes through; X-Remote-User-Name for attribution |
+| HA ingress for auth | No separate login needed; HA session passes through; X-Ingress-Remote-User-Name for attribution |
 | Recipes included in v1 scope | RECP-01–05 are in REQUIREMENTS.md v1; research flags them as "validate first" |
 | Display-only HA integration (v1) | REST sensor endpoint only; no bidirectional entity push needed |
+| INVENTAR_DB_URL env var for test override | Tests never touch /data; conftest.py sets env var before any import |
+| Conditional SPA mount in main.py | StaticFiles only activated when frontend/dist/assets/ exists — backend tests pass solo |
+| All 5 v1 tables in Phase 1 migration 0001 | Phase 2+ adds zero infrastructure migrations; schema complete from day one |
 
 ### Critical Implementation Constraints
 
@@ -114,8 +118,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-15T06:44:17.607Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-15T11:30:50.522Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
 
 To resume: `/clear` then `/gsd-execute-phase 1`
