@@ -37,8 +37,8 @@
 - [ ] **ORG-02**: User can create custom categories beyond the defaults
 - [ ] **ORG-03**: Each item has an assigned storage location (e.g. "kitchen top shelf", "bathroom under sink")
 - [ ] **ORG-04**: User can create, rename, and delete storage locations
-- [ ] **ORG-05**: User can filter and search inventory by storage location
-- [ ] **ORG-06**: User can filter and search inventory by category
+- [x] **ORG-05**: User can filter and search inventory by storage location
+- [x] **ORG-06**: User can filter and search inventory by category
 
 ### Shopping List
 
@@ -153,8 +153,8 @@
 | ORG-02 | Phase 2 | Pending |
 | ORG-03 | Phase 2 | Pending |
 | ORG-04 | Phase 2 | Pending |
-| ORG-05 | Phase 2 | Pending |
-| ORG-06 | Phase 2 | Pending |
+| ORG-05 | Phase 2 | Complete |
+| ORG-06 | Phase 2 | Complete |
 | SHOP-01 | Phase 4 | Pending |
 | SHOP-02 | Phase 4 | Pending |
 | SHOP-03 | Phase 4 | Pending |
