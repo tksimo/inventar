@@ -7,8 +7,8 @@
 
 ### Add-on Infrastructure
 
-- [ ] **INFRA-01**: App runs as a Home Assistant add-on (Docker container managed by HA Supervisor)
-- [ ] **INFRA-02**: App is accessible as a panel in the HA sidebar
+- [x] **INFRA-01**: App runs as a Home Assistant add-on (Docker container managed by HA Supervisor)
+- [x] **INFRA-02**: App is accessible as a panel in the HA sidebar
 - [ ] **INFRA-03**: All data is persisted in `/data` so it survives add-on updates
 - [ ] **INFRA-04**: HA ingress handles authentication — no separate login required
 - [ ] **INFRA-05**: App is accessible from a local IP:port directly (in addition to HA sidebar)
@@ -130,25 +130,55 @@
 
 ## Traceability
 
-Populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01–05 | Phase 1 | Pending |
-| ITEM-01–08 | Phase 2–3 | Pending |
-| QTY-01–04 | Phase 2 | Pending |
-| ORG-01–06 | Phase 2 | Pending |
-| SHOP-01–05 | Phase 4 | Pending |
-| RSTO-01–03 | Phase 4 | Pending |
-| RECP-01–05 | Phase 5 | Pending |
-| USER-01–03 | Phase 2 | Pending |
-| HA-01–02 | Phase 6 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| ITEM-01 | Phase 3 | Pending |
+| ITEM-02 | Phase 3 | Pending |
+| ITEM-03 | Phase 2 | Pending |
+| ITEM-04 | Phase 2 | Pending |
+| ITEM-05 | Phase 2 | Pending |
+| ITEM-06 | Phase 2 | Pending |
+| ITEM-07 | Phase 3 | Pending |
+| ITEM-08 | Phase 3 | Pending |
+| QTY-01 | Phase 2 | Pending |
+| QTY-02 | Phase 2 | Pending |
+| QTY-03 | Phase 2 | Pending |
+| QTY-04 | Phase 2 | Pending |
+| ORG-01 | Phase 2 | Pending |
+| ORG-02 | Phase 2 | Pending |
+| ORG-03 | Phase 2 | Pending |
+| ORG-04 | Phase 2 | Pending |
+| ORG-05 | Phase 2 | Pending |
+| ORG-06 | Phase 2 | Pending |
+| SHOP-01 | Phase 4 | Pending |
+| SHOP-02 | Phase 4 | Pending |
+| SHOP-03 | Phase 4 | Pending |
+| SHOP-04 | Phase 4 | Pending |
+| SHOP-05 | Phase 4 | Pending |
+| RSTO-01 | Phase 4 | Pending |
+| RSTO-02 | Phase 4 | Pending |
+| RSTO-03 | Phase 4 | Pending |
+| RECP-01 | Phase 5 | Pending |
+| RECP-02 | Phase 5 | Pending |
+| RECP-03 | Phase 5 | Pending |
+| RECP-04 | Phase 5 | Pending |
+| RECP-05 | Phase 5 | Pending |
+| USER-01 | Phase 2 | Pending |
+| USER-02 | Phase 2 | Pending |
+| USER-03 | Phase 2 | Pending |
+| HA-01 | Phase 6 | Pending |
+| HA-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 38 total
 - Mapped to phases: 38
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after initial definition*
+*Last updated: 2026-04-14 after roadmap creation*
