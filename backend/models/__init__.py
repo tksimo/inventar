@@ -74,7 +74,7 @@ class Item(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     category = relationship("Category", back_populates="items")
     location = relationship("Location", back_populates="items")
-    transactions = relationship("Transaction", back_populates="item")
+    transactions = relationship("Transaction", back_populates="item", passive_deletes=True)
 
 
 class Transaction(Base):
