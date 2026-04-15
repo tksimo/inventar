@@ -1,0 +1,5 @@
+# Force LF line endings for shell scripts so Alpine/bashio can execute them
+*.sh text eol=lf
+run.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
