@@ -17,6 +17,10 @@ sys.path.insert(0, str(BACKEND_DIR))
 # Force a temp sqlite path BEFORE importing anything that reads DATABASE_URL
 _TMPDIR = tempfile.mkdtemp(prefix="inventar_test_")
 os.environ["INVENTAR_DB_URL"] = f"sqlite:///{_TMPDIR}/test.db"
+# Unit tests run without the SPA mount. The integration tests in
+# test_spa_integration.py and test_smoke_stack.py explicitly clear this
+# flag before importing main.
+os.environ["INVENTAR_SKIP_SPA"] = "1"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
