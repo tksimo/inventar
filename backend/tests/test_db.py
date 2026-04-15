@@ -9,6 +9,27 @@ from sqlalchemy import create_engine, inspect
 EXPECTED_TABLES = {"categories", "locations", "items", "transactions", "shopping_list"}
 
 
+def _restore_schema_modules() -> None:
+    """Reload models and schemas after a db.database reload.
+
+    When db.database is reloaded, models must be reloaded too so that
+    Base.metadata has the ORM table definitions. Schemas must also be reloaded
+    so that Pydantic's cached validators use the freshly imported QuantityMode /
+    StockStatus enum classes (class identity mismatch causes ValidationError in
+    subsequent schema unit tests).
+    """
+    import models as mdl
+    importlib.reload(mdl)
+    import schemas.item as si
+    importlib.reload(si)
+    import schemas.category as sc
+    importlib.reload(sc)
+    import schemas.location as sl
+    importlib.reload(sl)
+    import schemas as s
+    importlib.reload(s)
+
+
 def test_db_path_default_is_data_inventar_db():
     """When INVENTAR_DB_URL is unset, the default MUST be /data/inventar.db."""
     saved = os.environ.pop("INVENTAR_DB_URL", None)
@@ -21,6 +42,7 @@ def test_db_path_default_is_data_inventar_db():
             os.environ["INVENTAR_DB_URL"] = saved
         import db.database as dbm
         importlib.reload(dbm)
+        _restore_schema_modules()
 
 
 def test_schema_create_all_v1_tables():
@@ -31,8 +53,8 @@ def test_schema_create_all_v1_tables():
     """
     import db.database as dbm
     importlib.reload(dbm)
-    import models as mdl
-    importlib.reload(mdl)
+    _restore_schema_modules()
+    import models as mdl  # noqa: F401 — side effect: registers tables on Base
     Base = dbm.Base
     with tempfile.TemporaryDirectory() as d:
         eng = create_engine(f"sqlite:///{d}/t.db")
@@ -68,6 +90,7 @@ def test_migration_upgrade_head_creates_v1_tables():
                 os.environ.pop("INVENTAR_DB_URL", None)
             import db.database as dbm
             importlib.reload(dbm)
+            _restore_schema_modules()
         eng = create_engine(db_url)
         tables = set(inspect(eng).get_table_names())
         eng.dispose()

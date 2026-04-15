@@ -17,6 +17,31 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 
+def _restore_modules() -> None:
+    """Reload db.database, models, and all schemas after alembic tests.
+
+    Alembic tests temporarily redirect INVENTAR_DB_URL so they need to reload
+    db.database to pick up the new URL. After restoring the env var we must
+    reload again — and also reload models + schemas — so that:
+      1. db.database.Base.metadata has the ORM table definitions registered.
+      2. models.QuantityMode / StockStatus are the same class objects that
+         schemas.item.ItemResponse was built against (Pydantic caches validators
+         keyed on class identity; mismatched objects cause ValidationError).
+    """
+    import db.database as dbm
+    importlib.reload(dbm)
+    import models as mdl
+    importlib.reload(mdl)
+    import schemas.item as si
+    importlib.reload(si)
+    import schemas.category as sc
+    importlib.reload(sc)
+    import schemas.location as sl
+    importlib.reload(sl)
+    import schemas as s
+    importlib.reload(s)
+
+
 def _alembic_upgrade(db_url: str) -> None:
     """Run alembic upgrade head against an isolated DB URL."""
     from alembic import command
@@ -36,8 +61,7 @@ def _alembic_upgrade(db_url: str) -> None:
             os.environ["INVENTAR_DB_URL"] = saved
         else:
             os.environ.pop("INVENTAR_DB_URL", None)
-        import db.database as dbm
-        importlib.reload(dbm)
+        _restore_modules()
 
 
 def _alembic_downgrade(db_url: str) -> None:
@@ -59,8 +83,7 @@ def _alembic_downgrade(db_url: str) -> None:
             os.environ["INVENTAR_DB_URL"] = saved
         else:
             os.environ.pop("INVENTAR_DB_URL", None)
-        import db.database as dbm
-        importlib.reload(dbm)
+        _restore_modules()
 
 
 def test_default_categories_present():
@@ -100,14 +123,13 @@ def test_category_is_default_column_exists():
 
 def test_custom_category_defaults_to_false():
     """Creating a Category without is_default results in is_default == False."""
-    import importlib
-    import db.database as dbm
-    importlib.reload(dbm)
+    # Do NOT reload models — reloading creates a new QuantityMode class identity
+    # that breaks Pydantic's cached ItemResponse schema for subsequent tests.
+    # Import models directly; they are already loaded and Base.metadata is populated.
     import models as mdl
-    importlib.reload(mdl)
+    from db.database import Base
 
     Category = mdl.Category
-    Base = dbm.Base
 
     tmpdir = tempfile.mkdtemp(prefix="inventar_cat_test_")
     db_url = f"sqlite:///{tmpdir}/custom_cat.db"
