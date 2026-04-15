@@ -12,7 +12,7 @@ At a glance, know what you have, where it is, and what you need to buy — witho
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] App is packaged as a Home Assistant add-on and runs on HAOS — validated Phase 1 (2026-04-15): installs via Supervisor, appears in sidebar, serves app through ingress, direct port accessible, data persists across restarts, no separate login required
 
 ### Active
 
@@ -26,7 +26,6 @@ At a glance, know what you have, where it is, and what you need to buy — witho
 - [ ] User receives alerts when items fall below their reorder threshold
 - [ ] Multiple household members (2-3) can share and update the inventory
 - [ ] Home Assistant can display current inventory data (read-only, v1)
-- [ ] App is packaged as a Home Assistant add-on and runs on HAOS
 
 ### Out of Scope
 
@@ -55,7 +54,7 @@ At a glance, know what you have, where it is, and what you need to buy — witho
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| HA add-on deployment | HAOS doesn't allow arbitrary processes; add-on is the intended extension mechanism | — Pending |
+| HA add-on deployment | HAOS doesn't allow arbitrary processes; add-on is the intended extension mechanism | Validated Phase 1 |
 | Barcode scanning via phone camera in webapp | No native app needed; browser camera API (e.g. ZXing/QuaggaJS) handles this well | — Pending |
 | Display-only HA integration in v1 | Keeps v1 scope tight; bidirectional HA integration adds significant complexity | — Pending |
 
@@ -77,4 +76,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after initialization*
+*Last updated: 2026-04-15 after Phase 1 live verification*
