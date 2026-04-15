@@ -1,0 +1,66 @@
+/* Phase 1 design tokens — sourced verbatim from 01-UI-SPEC.md.
+   Do NOT rename these custom properties; Phase 2 (shadcn init) will map
+   shadcn tokens ONTO these so any phase-1 rule that references them
+   continues to work. */
+
+:root {
+  /* Color (UI-SPEC §Color) */
+  --color-dominant: #1C1C1E;
+  --color-secondary: #2C2C2E;
+  --color-accent: #3B82F6;
+  --color-destructive: #EF4444;
+  --color-text-primary: #F2F2F7;
+  --color-text-secondary: #8E8E93;
+  --color-border: #3A3A3C;
+
+  /* Spacing (UI-SPEC §Spacing Scale) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Typography (UI-SPEC §Typography) */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size-body: 14px;
+  --font-size-label: 12px;
+  --font-size-heading: 20px;
+  --font-line-body: 1.5;
+  --font-line-label: 1.4;
+  --font-line-heading: 1.2;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+
+  /* Layout (UI-SPEC §Spacing exceptions) */
+  --sidebar-width: 220px;
+  --nav-item-min-height: 44px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--color-dominant);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: var(--font-line-body);
+  font-weight: var(--font-weight-regular);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
