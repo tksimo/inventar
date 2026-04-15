@@ -1,0 +1,19 @@
+.stub {
+  padding: var(--space-xl) var(--space-md) var(--space-md) var(--space-md);
+}
+
+.heading {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: var(--font-size-heading);
+  line-height: var(--font-line-heading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--font-size-body);
+  line-height: var(--font-line-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
