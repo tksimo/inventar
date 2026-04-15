@@ -33,7 +33,7 @@
 
 ### Organisation
 
-- [ ] **ORG-01**: Items are organised into categories: Food & pantry, Fridge & freezer, Cleaning & household, Personal care
+- [x] **ORG-01**: Items are organised into categories: Food & pantry, Fridge & freezer, Cleaning & household, Personal care
 - [ ] **ORG-02**: User can create custom categories beyond the defaults
 - [ ] **ORG-03**: Each item has an assigned storage location (e.g. "kitchen top shelf", "bathroom under sink")
 - [ ] **ORG-04**: User can create, rename, and delete storage locations
@@ -65,7 +65,7 @@
 ### Multi-User
 
 - [ ] **USER-01**: 2–3 household members share one inventory with no separate accounts (HA identity used)
-- [ ] **USER-02**: Each inventory change records which HA user made it and when
+- [x] **USER-02**: Each inventory change records which HA user made it and when
 - [ ] **USER-03**: All household members see inventory updates in real time (or near real time on refresh)
 
 ### HA Display Integration
@@ -149,7 +149,7 @@
 | QTY-02 | Phase 2 | Pending |
 | QTY-03 | Phase 2 | Pending |
 | QTY-04 | Phase 2 | Pending |
-| ORG-01 | Phase 2 | Pending |
+| ORG-01 | Phase 2 | Complete |
 | ORG-02 | Phase 2 | Pending |
 | ORG-03 | Phase 2 | Pending |
 | ORG-04 | Phase 2 | Pending |
@@ -169,7 +169,7 @@
 | RECP-04 | Phase 5 | Pending |
 | RECP-05 | Phase 5 | Pending |
 | USER-01 | Phase 2 | Pending |
-| USER-02 | Phase 2 | Pending |
+| USER-02 | Phase 2 | Complete |
 | USER-03 | Phase 2 | Pending |
 | HA-01 | Phase 6 | Pending |
 | HA-02 | Phase 6 | Pending |

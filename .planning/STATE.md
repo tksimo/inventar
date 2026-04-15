@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-04-15T11:46:47.118Z"
+stopped_at: Completed 02-core-inventory/02-01-PLAN.md
+last_updated: "2026-04-15T21:34:08.794Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 7
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State: Inventar
@@ -26,21 +26,21 @@ progress:
 
 **Current milestone:** 1 — Home inventory webapp as HA add-on
 
-**Current focus:** Phase 01 — add-on-scaffolding
+**Current focus:** Phase 02 — core-inventory
 
 ---
 
 ## Current Position
 
-Phase: 01 (add-on-scaffolding) — EXECUTING
-Plan: 1 of 4
+Phase: 02 (core-inventory) — EXECUTING
+Plan: 1 of 3
 **Phase:** 1 — Add-on Scaffolding (planned, not started)
 **Plan:** 4 plans created (01-01 through 01-04)
-**Status:** Executing Phase 01
+**Status:** Executing Phase 02
 
 **Progress:**
 
-[██████████] 100%
+[███████░░░] 71%
 [          ] Phase 1: Add-on Scaffolding
 [          ] Phase 2: Core Inventory
 [          ] Phase 3: Barcode Scanning
@@ -67,6 +67,7 @@ Plan: 1 of 4
 | Phase 01 P02 | 4 | 2 tasks | 23 files |
 | Phase 01 P03 | 6 | 2 tasks | 23 files |
 | Phase 01 P04 | 4 | 2 tasks | 7 files |
+| Phase 02-core-inventory P01 | 12 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Plan: 1 of 4
 | vitest.config.js esbuild.jsx='automatic' | vitest 3.2.4 bundles vite 7 internally; @vitejs/plugin-react 6 requires vite 8; esbuild option bypasses version gap |
 | BrowserRouter test renders App directly | react-router 7 throws on nested routers; jsdom default URL is '/' so BrowserRouter matches Inventory route without MemoryRouter wrapper |
 | apiFetch is the sole API call contract | All Phase 2+ code must use apiFetch(path) — never fetch('/path') — to preserve HA ingress token in URL |
+| Alembic data migration for ORG-01 seed | Migration 0002 seeds 4 default categories — runs once at upgrade, idempotent via INSERT OR IGNORE, survives restarts |
+| use_enum_values=True in Pydantic v2 ConfigDict | Serializes QuantityMode/StockStatus as lowercase strings ('exact', 'status', 'have', 'low', 'out') without custom serializers |
+| CategoryCreate omits is_default | Clients cannot self-promote categories to default status; only migration 0002 sets is_default=1 (T-02-02) |
 
 ### Critical Implementation Constraints
 
@@ -123,8 +127,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:46:47.113Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-04-15T21:34:08.788Z
+Stopped at: Completed 02-core-inventory/02-01-PLAN.md
 Resume file: None
 
 To resume: `/clear` then `/gsd-execute-phase 1`
