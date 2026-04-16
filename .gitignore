@@ -6,8 +6,8 @@ __pycache__/
 *.pyo
 *.egg-info/
 .eggs/
-dist/
-build/
+/dist/
+/build/
 *.egg
 
 # Virtual environments
@@ -29,7 +29,6 @@ backend/_tmp*.db
 
 # Node / frontend
 node_modules/
-frontend/dist/
 
 # Editor
 .vscode/
