@@ -1,0 +1,114 @@
+.row {
+  list-style: none;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+}
+
+.name {
+  flex: 1 1 auto;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.confirmText {
+  flex: 1 1 auto;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.input {
+  flex: 1 1 auto;
+  height: 40px;
+  padding: 0 var(--space-md);
+  background: var(--color-dominant);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.iconBtn {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.iconBtn:hover {
+  background: var(--color-dominant);
+  color: var(--color-text-primary);
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.destructive {
+  color: var(--color-destructive);
+}
+
+.destructive:hover {
+  color: var(--color-destructive);
+}
+
+.confirmYes {
+  height: 40px;
+  padding: 0 var(--space-md);
+  min-width: 80px;
+  background: var(--color-destructive);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: 6px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.confirmYes:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmCancel {
+  height: 40px;
+  padding: 0 var(--space-md);
+  min-width: 80px;
+  background: var(--color-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+}
+
+.errorLine {
+  margin: 0;
+  font-size: var(--font-size-label);
+  color: var(--color-destructive);
+}
