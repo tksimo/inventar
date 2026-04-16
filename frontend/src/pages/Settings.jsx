@@ -88,7 +88,7 @@ export default function Settings() {
                 <SettingsListItem
                   key={c.id}
                   entry={{ id: c.id, name: c.name }}
-                  locked={c.is_default}
+                  locked={false}
                   onRename={(id, name) => categoriesHook.update(id, { name })}
                   onDelete={(id) => categoriesHook.remove(id)}
                   deleteConfirmText="Items in this category will become uncategorised. Delete anyway?"

@@ -2,14 +2,16 @@
 
 Implements ORG-02, ORG-06 requirements.
 
-Default-lock enforcement:
-  Categories with is_default=True cannot be renamed (PATCH) or deleted (DELETE).
+Default flag:
+  The is_default column is used ONLY for default-first ordering in GET
+  (Category.is_default.desc()). It no longer gates write access — default
+  categories are fully renameable and deletable (UAT Test 11 design change).
   Only the Alembic migration 0002 sets is_default=True; the POST endpoint
   always forces is_default=False on newly created categories (T-02-02, T-02-15).
 
 FK null-out on delete:
-  Deleting a non-default category nullifies item.category_id on all referring
-  items before the category row is removed (Pitfall 7 / T-02-14).
+  Deleting any category nullifies item.category_id on all referring items
+  before the category row is removed (Pitfall 7 / T-02-14).
 """
 from __future__ import annotations
 
@@ -77,15 +79,11 @@ def update_category(
 ) -> CategoryResponse:
     """Rename a category.
 
-    Default categories (is_default=True) cannot be renamed — returns 403.
+    All categories (including defaults) are renameable (UAT Test 11).
     """
     cat = db.query(Category).filter(Category.id == category_id).first()
     if cat is None:
         raise HTTPException(status_code=404, detail="Category not found")
-    if cat.is_default:
-        raise HTTPException(
-            status_code=403, detail="Default categories cannot be renamed"
-        )
 
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -102,19 +100,15 @@ def update_category(
 
 @router.delete("/{category_id}")
 def delete_category(category_id: int, db: Session = Depends(get_db)) -> dict:
-    """Delete a custom category.
+    """Delete a category.
 
-    Default categories (is_default=True) cannot be deleted — returns 403.
+    All categories (including defaults) are deletable (UAT Test 11).
     Before deleting, nullifies item.category_id on all referring items
     to prevent FK orphan rows (Pitfall 7 / T-02-14).
     """
     cat = db.query(Category).filter(Category.id == category_id).first()
     if cat is None:
         raise HTTPException(status_code=404, detail="Category not found")
-    if cat.is_default:
-        raise HTTPException(
-            status_code=403, detail="Default categories cannot be deleted"
-        )
 
     # Nullify category_id on all items that reference this category (T-02-14)
     db.query(Item).filter(Item.category_id == category_id).update({"category_id": None})

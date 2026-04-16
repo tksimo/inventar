@@ -28,9 +28,9 @@ class ItemCreate(BaseModel):
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     quantity_mode: Optional[QuantityMode] = None
-    quantity: Optional[float] = None
+    quantity: Optional[int] = None
     status: Optional[StockStatus] = None
-    reorder_threshold: Optional[float] = None
+    reorder_threshold: Optional[int] = None
     notes: Optional[str] = None
     image_url: Optional[str] = None
     calories: Optional[float] = None
@@ -53,9 +53,9 @@ class ItemUpdate(BaseModel):
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     quantity_mode: Optional[QuantityMode] = None
-    quantity: Optional[float] = None
+    quantity: Optional[int] = None
     status: Optional[StockStatus] = None
-    reorder_threshold: Optional[float] = None
+    reorder_threshold: Optional[int] = None
     notes: Optional[str] = None
     image_url: Optional[str] = None
     calories: Optional[float] = None
@@ -83,9 +83,9 @@ class ItemResponse(BaseModel):
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     quantity_mode: QuantityMode = QuantityMode.EXACT
-    quantity: Optional[float] = None
+    quantity: Optional[int] = None
     status: Optional[StockStatus] = None
-    reorder_threshold: Optional[float] = None
+    reorder_threshold: Optional[int] = None
     notes: Optional[str] = None
     image_url: Optional[str] = None
     calories: Optional[float] = None

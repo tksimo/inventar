@@ -130,9 +130,9 @@ def test_item_notes(client):
 
 def test_exact_quantity(client):
     # RED until Plan 02-02 — router implementation
-    resp = client.post("/api/items/", json={"name": "Apples", "quantity": 6.0, "quantity_mode": "exact"})
+    resp = client.post("/api/items/", json={"name": "Apples", "quantity": 6, "quantity_mode": "exact"})
     assert resp.status_code == 201
-    assert resp.json()["quantity"] == 6.0
+    assert resp.json()["quantity"] == 6
     assert resp.json()["quantity_mode"] == "exact"
 
 
@@ -145,19 +145,19 @@ def test_status_mode(client):
 
 def test_reorder_threshold(client):
     # RED until Plan 02-02 — router implementation
-    resp = client.post("/api/items/", json={"name": "Coffee", "reorder_threshold": 2.0})
+    resp = client.post("/api/items/", json={"name": "Coffee", "reorder_threshold": 2})
     assert resp.status_code == 201
-    assert resp.json()["reorder_threshold"] == 2.0
+    assert resp.json()["reorder_threshold"] == 2
 
 
 def test_quantity_quick_update(client):
     # RED until Plan 02-02 — router implementation
-    create_resp = client.post("/api/items/", json={"name": "Eggs", "quantity": 10.0})
+    create_resp = client.post("/api/items/", json={"name": "Eggs", "quantity": 10})
     assert create_resp.status_code == 201
     item_id = create_resp.json()["id"]
     patch_resp = client.patch(f"/api/items/{item_id}", json={"quantity": 4})
     assert patch_resp.status_code == 200
-    assert patch_resp.json()["quantity"] == 4.0
+    assert patch_resp.json()["quantity"] == 4
 
 
 def test_auto_flip_to_out(client):
@@ -310,3 +310,96 @@ def test_enum_values_lowercase(client):
     matching = [i for i in items if i["id"] == item_id]
     assert len(matching) == 1
     assert matching[0]["quantity_mode"] == "exact"
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-07 — int-contract tests (behaviours 1-5)
+# ---------------------------------------------------------------------------
+
+def test_item_response_quantity_is_int_not_float():
+    """Behaviour 1: ItemResponse with quantity=2 serializes as int 2, not float 2.0."""
+    from datetime import datetime
+    from models import Item, QuantityMode
+    from schemas import ItemResponse
+
+    item = Item(
+        id=10,
+        name="Milk",
+        quantity_mode=QuantityMode.EXACT,
+        quantity=2,
+        archived=False,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    dumped = ItemResponse.model_validate(item).model_dump()
+    qty = dumped["quantity"]
+    assert isinstance(qty, int), f"Expected int, got {type(qty)}: {qty!r}"
+    assert qty == 2
+    # Ensure JSON serialization does not produce "2.0"
+    # Use model_dump_json (Pydantic handles datetime serialization)
+    from schemas import ItemResponse as _IR
+    from models import Item as _Item, QuantityMode as _QM
+    serialized = ItemResponse.model_validate(item).model_dump_json()
+    assert "2.0" not in serialized, f"Float leaked into JSON: {serialized}"
+
+
+def test_item_create_rejects_non_integer_float_quantity():
+    """Behaviour 2: ItemCreate(quantity=2.5) raises ValidationError (int field rejects floats)."""
+    from pydantic import ValidationError
+    from schemas import ItemCreate
+
+    with pytest.raises(ValidationError):
+        ItemCreate(name="x", quantity=2.5)
+
+
+def test_item_create_accepts_integer_quantity():
+    """Behaviour 3: ItemCreate(quantity=2) succeeds and quantity is int 2."""
+    from schemas import ItemCreate
+
+    item = ItemCreate(name="x", quantity=2)
+    dumped = item.model_dump()
+    assert dumped["quantity"] == 2
+    assert isinstance(dumped["quantity"], int)
+
+
+def test_post_item_returns_integer_quantity(client):
+    """Behaviour 4: POST /api/items/ with quantity=2 returns JSON with integer 2, not 2.0."""
+    import json
+
+    resp = client.post(
+        "/api/items/",
+        json={"name": "Milk", "quantity_mode": "exact", "quantity": 2},
+    )
+    assert resp.status_code == 201
+    body = resp.text
+    assert "2.0" not in body, f"Float leaked in response body: {body}"
+    parsed = resp.json()
+    assert isinstance(parsed["quantity"], int), (
+        f"Expected int, got {type(parsed['quantity'])}: {parsed['quantity']!r}"
+    )
+    assert parsed["quantity"] == 2
+
+
+def test_patch_quantity_records_integer_delta(client):
+    """Behaviour 5: PATCH with quantity=5 after quantity=2 records delta=3 as integer."""
+    from db.database import SessionLocal
+    from models import Transaction
+
+    create_resp = client.post(
+        "/api/items/",
+        json={"name": "Beans", "quantity_mode": "exact", "quantity": 2},
+    )
+    assert create_resp.status_code == 201
+    item_id = create_resp.json()["id"]
+
+    patch_resp = client.patch(f"/api/items/{item_id}", json={"quantity": 5})
+    assert patch_resp.status_code == 200
+    assert patch_resp.json()["quantity"] == 5
+
+    with SessionLocal() as session:
+        txn = session.query(Transaction).filter_by(
+            item_id=item_id, action="quantity_change"
+        ).first()
+    assert txn is not None, "No quantity_change transaction found"
+    assert txn.delta == 3, f"Expected delta=3, got: {txn.delta!r}"
+    assert isinstance(txn.delta, (int, float)) and int(txn.delta) == 3

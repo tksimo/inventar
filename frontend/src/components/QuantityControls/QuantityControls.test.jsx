@@ -65,3 +65,22 @@ test('aria-label uses item name for exact mode buttons', () => {
   expect(screen.getByLabelText('Increase quantity for Milk')).toBeInTheDocument()
   expect(screen.getByLabelText('Decrease quantity for Milk')).toBeInTheDocument()
 })
+
+// T7-T9: formatCount regression tests
+test('T7: formatCount(2) returns "2"', () => {
+  // Access via rendering: exact item with quantity=2 should display "2"
+  const item2 = { id: 1, name: 'Test', quantity_mode: 'exact', quantity: 2, status: null }
+  render(<QuantityControls item={item2} onIncrement={() => {}} onDecrement={() => {}} />)
+  expect(screen.getByText('2')).toBeInTheDocument()
+})
+
+test('T8: formatCount(0) returns "0"', () => {
+  const item0 = { id: 1, name: 'Test', quantity_mode: 'exact', quantity: 0, status: null }
+  render(<QuantityControls item={item0} onIncrement={() => {}} onDecrement={() => {}} />)
+  expect(screen.getByText('0')).toBeInTheDocument()
+})
+
+test('T9: formatCount(null) returns "0"', () => {
+  render(<QuantityControls item={nullQtyItem} onIncrement={() => {}} onDecrement={() => {}} />)
+  expect(screen.getByText('0')).toBeInTheDocument()
+})

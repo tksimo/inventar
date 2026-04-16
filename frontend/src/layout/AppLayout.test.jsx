@@ -4,6 +4,13 @@ import { MemoryRouter } from 'react-router-dom'
 import AppLayout from './AppLayout.jsx'
 import App from '../App.jsx'
 
+// Mock useAccessInfo so AppLayout tests are deterministic (banner suppressed by default)
+vi.mock('../hooks/useAccessInfo.js', () => ({
+  useAccessInfo: vi.fn(() => ({ viaIngress: true, loading: false, userName: null, error: null })),
+}))
+
+import { useAccessInfo } from '../hooks/useAccessInfo.js'
+
 describe('AppLayout', () => {
   it('renders the brand name "Inventar"', () => {
     render(
@@ -48,6 +55,22 @@ describe('AppLayout', () => {
     )
     const main = screen.getByRole('main')
     expect(main).toContainElement(screen.getByTestId('child'))
+  })
+
+  it('T10: renders AccessBanner above <main> in the DOM tree', () => {
+    // Override mock for this test: viaIngress=false so banner renders
+    vi.mocked(useAccessInfo).mockReturnValue({ viaIngress: false, loading: false, userName: null, error: null })
+    render(
+      <MemoryRouter>
+        <AppLayout><div>content</div></AppLayout>
+      </MemoryRouter>,
+    )
+    const banner = screen.getByRole('status')
+    const main = screen.getByRole('main')
+    // Banner should appear before main in DOM order
+    expect(
+      banner.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })
 
