@@ -197,9 +197,9 @@ def update_item(
 
     if keys == {"quantity"} and not is_auto_flip:
         # Pure quantity-only update
-        old_quantity = item.quantity or 0.0
+        old_quantity = item.quantity or 0
         new_quantity = update_data["quantity"]
-        delta = (new_quantity or 0.0) - old_quantity
+        delta = int((new_quantity or 0) - old_quantity)  # defensive int cast for pre-migration rows
         action = "quantity_change"
     else:
         delta = None
