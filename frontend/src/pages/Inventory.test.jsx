@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act, waitFor, cleanup } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Inventory from './Inventory.jsx'
 
@@ -24,8 +25,6 @@ function makeItem(overrides = {}) {
 
 // Helper: mock fetch to return given responses for items, categories, locations (in order)
 function mockFetch({ items = [], categories = [], locations = [] } = {}) {
-  let callIndex = 0
-  const responses = [items, categories, locations]
   return vi.fn(async (url) => {
     // Route by URL segment
     if (url.includes('api/items/')) {
@@ -37,10 +36,7 @@ function mockFetch({ items = [], categories = [], locations = [] } = {}) {
     if (url.includes('api/locations/')) {
       return new Response(JSON.stringify(locations), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
-    // fallback
-    const resp = responses[callIndex] ?? []
-    callIndex++
-    return new Response(JSON.stringify(resp), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
   })
 }
 
@@ -50,10 +46,16 @@ function mockFetchError() {
   })
 }
 
+function renderInventory() {
+  return render(
+    <MemoryRouter>
+      <Inventory />
+    </MemoryRouter>
+  )
+}
+
 afterEach(() => {
   cleanup()
-  delete window.__inventarAddClicked
-  delete window.__inventarRowClicked
   vi.unstubAllGlobals()
   vi.useRealTimers()
 })
@@ -70,7 +72,7 @@ it('Test 1: shows LoadingState skeletons while fetch is pending', async () => {
     return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }))
 
-  render(<Inventory />)
+  renderInventory()
 
   // While items fetch is pending, LoadingState should be visible
   const loadingEl = screen.getByRole('status', { name: 'Loading…' })
@@ -85,24 +87,26 @@ it('Test 1: shows LoadingState skeletons while fetch is pending', async () => {
 it('Test 2: shows ErrorState when items fetch rejects', async () => {
   vi.stubGlobal('fetch', mockFetchError())
 
-  render(<Inventory />)
+  renderInventory()
 
   await waitFor(() => {
     expect(screen.getByText('Could not load inventory')).toBeInTheDocument()
   })
 })
 
-it('Test 3: empty state with CTA — clicking "Add your first item" sets window.__inventarAddClicked', async () => {
+it('Test 3: empty state with CTA — clicking "Add your first item" opens the drawer', async () => {
   vi.stubGlobal('fetch', mockFetch({ items: [], categories: [], locations: [] }))
 
-  render(<Inventory />)
+  renderInventory()
 
   await waitFor(() => {
     expect(screen.getByText('Nothing here yet')).toBeInTheDocument()
   })
 
   fireEvent.click(screen.getByText('Add your first item'))
-  expect(window.__inventarAddClicked).toBe(true)
+
+  await screen.findByRole('dialog')
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
 })
 
 it('Test 4: renders item name and attribution line when item has last_updated_by_name', async () => {
@@ -118,7 +122,7 @@ it('Test 4: renders item name and attribution line when item has last_updated_by
 
   vi.stubGlobal('fetch', mockFetch({ items: [item], categories: [], locations: [] }))
 
-  render(<Inventory />)
+  renderInventory()
 
   await waitFor(() => {
     expect(screen.getAllByText('Butter').length).toBeGreaterThan(0)
@@ -135,7 +139,7 @@ it('Test 5: search filters items — "mil" shows Milk but not Bread', async () =
 
   vi.stubGlobal('fetch', mockFetch({ items: [milk, bread], categories: [], locations: [] }))
 
-  render(<Inventory />)
+  renderInventory()
 
   // Wait for items to load
   await waitFor(() => {
@@ -167,7 +171,7 @@ it('Test 6: filter chip dismiss — clicking × on active chip removes it from f
 
   vi.stubGlobal('fetch', mockFetch({ items: [item], categories: [category], locations: [] }))
 
-  render(<Inventory />)
+  renderInventory()
 
   await waitFor(() => {
     expect(screen.getAllByText('Apple').length).toBeGreaterThan(0)
@@ -177,7 +181,6 @@ it('Test 6: filter chip dismiss — clicking × on active chip removes it from f
   fireEvent.click(screen.getByText('Filter'))
 
   // Find the "Food" chip inside the picker and click it to activate the filter
-  // The picker shows category chips; click the "Food" chip body
   await waitFor(() => {
     expect(screen.getByRole('dialog', { name: 'Filter picker' })).toBeInTheDocument()
   })
@@ -203,4 +206,56 @@ it('Test 6: filter chip dismiss — clicking × on active chip removes it from f
   await waitFor(() => {
     expect(screen.queryByLabelText('Remove filter: Food')).not.toBeInTheDocument()
   })
+})
+
+it('Test 7: clicking an ItemRow opens the drawer in edit mode with item name pre-filled', async () => {
+  const item = makeItem({ id: 1, name: 'Milk', category_id: null, location_id: null })
+
+  vi.stubGlobal('fetch', mockFetch({ items: [item], categories: [], locations: [] }))
+
+  renderInventory()
+
+  // Wait for item to render
+  await waitFor(() => {
+    expect(screen.getAllByText('Milk').length).toBeGreaterThan(0)
+  })
+
+  // Click the list item row — find the li element containing "Milk" in the listView
+  const milkTexts = screen.getAllByText('Milk')
+  // The row is an li — find the nearest li ancestor
+  const li = milkTexts[0].closest('li')
+  fireEvent.click(li)
+
+  // Drawer should open with Name input pre-filled
+  const dialog = await screen.findByRole('dialog')
+  expect(dialog).toBeInTheDocument()
+
+  const nameInput = screen.getByLabelText('Name')
+  expect(nameInput.value).toBe('Milk')
+})
+
+it('Test 8: clicking X (Close drawer button) with clean form closes the drawer without prompting', async () => {
+  vi.stubGlobal('fetch', mockFetch({ items: [], categories: [], locations: [] }))
+  vi.spyOn(window, 'confirm')
+
+  renderInventory()
+
+  await waitFor(() => {
+    expect(screen.getByText('Nothing here yet')).toBeInTheDocument()
+  })
+
+  // Open drawer via FAB
+  fireEvent.click(screen.getByLabelText('Add item'))
+
+  await screen.findByRole('dialog')
+
+  // Click the close button — form is clean (no changes)
+  fireEvent.click(screen.getByLabelText('Close drawer'))
+
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  // confirm should NOT have been called since form is clean
+  expect(window.confirm).not.toHaveBeenCalled()
 })

@@ -12,10 +12,11 @@ import EmptyState from '../components/EmptyState/EmptyState.jsx'
 import LoadingState from '../components/LoadingState/LoadingState.jsx'
 import ErrorState from '../components/ErrorState/ErrorState.jsx'
 import CategorySectionHeader from '../components/CategorySectionHeader/CategorySectionHeader.jsx'
+import ItemDrawer from '../components/ItemDrawer/ItemDrawer.jsx'
 import styles from './Inventory.module.css'
 
 export default function Inventory() {
-  const { items, loading: itemsLoading, error: itemsError, errorItemId, updateQuantity, cycleStatus } = useItems()
+  const { items, loading: itemsLoading, error: itemsError, errorItemId, create, update, remove, updateQuantity, cycleStatus } = useItems()
   const { categories, loading: catsLoading } = useCategories()
   const { locations, loading: locsLoading } = useLocations()
 
@@ -24,6 +25,7 @@ export default function Inventory() {
   const [activeCategoryIds, setActiveCategoryIds] = useState([])
   const [activeLocationIds, setActiveLocationIds] = useState([])
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [drawerState, setDrawerState] = useState({ open: false, mode: 'add', item: null })
 
   // Debounce search input 200ms
   useEffect(() => {
@@ -33,13 +35,8 @@ export default function Inventory() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Stub handlers — Plan 02-05 will replace with drawer open state
-  const handleAddClick = () => {
-    window.__inventarAddClicked = true
-  }
-  const handleRowClick = (item) => {
-    window.__inventarRowClicked = item.id
-  }
+  const openAdd = () => setDrawerState({ open: true, mode: 'add', item: null })
+  const openEdit = (item) => setDrawerState({ open: true, mode: 'edit', item })
 
   const toggleCategory = (id) => {
     setActiveCategoryIds((prev) =>
@@ -131,7 +128,7 @@ export default function Inventory() {
           heading="Nothing here yet"
           body="Add your first item to get started."
           cta="Add your first item"
-          onCtaClick={handleAddClick}
+          onCtaClick={openAdd}
         />
       )
     }
@@ -163,7 +160,7 @@ export default function Inventory() {
               key={item.id}
               item={item}
               locationName={item.location_id != null ? locationMap[item.location_id] : null}
-              onOpen={() => handleRowClick(item)}
+              onOpen={() => openEdit(item)}
               onIncrement={() => updateQuantity(item.id, +1)}
               onDecrement={() => updateQuantity(item.id, -1)}
               onCycle={() => cycleStatus(item.id)}
@@ -178,7 +175,7 @@ export default function Inventory() {
               item={item}
               categoryName={item.category_id != null ? categoryMap[item.category_id] : null}
               locationName={item.location_id != null ? locationMap[item.location_id] : null}
-              onOpen={() => handleRowClick(item)}
+              onOpen={() => openEdit(item)}
               onIncrement={() => updateQuantity(item.id, +1)}
               onDecrement={() => updateQuantity(item.id, -1)}
               onCycle={() => cycleStatus(item.id)}
@@ -250,7 +247,19 @@ export default function Inventory() {
       <main className={styles.body}>
         {renderContent()}
       </main>
-      <FAB onClick={handleAddClick} label="Add item" />
+      <FAB onClick={openAdd} label="Add item" />
+      {drawerState.open && (
+        <ItemDrawer
+          mode={drawerState.mode}
+          item={drawerState.item}
+          categories={categories}
+          locations={locations}
+          onClose={() => setDrawerState((s) => ({ ...s, open: false }))}
+          onCreate={async (body) => { const created = await create(body); return created }}
+          onUpdate={async (id, patch) => update(id, patch)}
+          onDelete={async (id) => remove(id)}
+        />
+      )}
     </div>
   )
 }
