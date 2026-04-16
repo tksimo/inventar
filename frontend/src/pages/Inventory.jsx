@@ -121,7 +121,7 @@ export default function Inventory() {
       )
     }
     // Total empty (no items at all, no search, no filter)
-    if (items.filter((i) => !i.archived).length === 0 && !debouncedSearch.trim() && !hasActiveFilters) {
+    if (filtered.length === 0 && !debouncedSearch.trim() && !hasActiveFilters) {
       return (
         <EmptyState
           icon={<Package size={48} />}
