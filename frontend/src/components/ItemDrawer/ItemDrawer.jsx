@@ -482,7 +482,7 @@ export default function ItemDrawer({
               )}
             </>
           )}
-          {deleteConfirming && (
+          {deleteConfirming && mode === 'edit' && item && (
             <>
               <span className={styles.confirmText}>Delete {item.name}?</span>
               <button
