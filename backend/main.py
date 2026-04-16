@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 from middleware.ingress import IngressUserMiddleware
 from routers import health, items, categories, locations
@@ -61,11 +61,24 @@ if not _SKIP_SPA:
     app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
 
     @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str):
+    async def spa_fallback(request: Request, full_path: str):
         """Catch-all for React Router client-side routes.
 
         Registered LAST so API routes (e.g. /healthz) take precedence.
         Any unmatched GET returns the SPA's index.html so deep-linking,
         browser refresh, and HA ingress all resolve to the React app.
+
+        Injects <base href> from X-Ingress-Path so that relative fetch()
+        calls in the SPA resolve against the ingress prefix rather than
+        the HA host root. Without this, fetch('./api/x') on a URL like
+        https://ha.local/abc_inventar (no trailing slash) strips the
+        ingress segment and 404s against HA's own API.
         """
+        ingress_path = request.headers.get("x-ingress-path", "").rstrip("/")
+        if ingress_path:
+            with open(_INDEX_HTML, encoding="utf-8") as f:
+                html = f.read()
+            base_tag = f'<base href="{ingress_path}/">'
+            html = html.replace("<head>", f"<head>\n    {base_tag}", 1)
+            return HTMLResponse(content=html)
         return FileResponse(_INDEX_HTML)
