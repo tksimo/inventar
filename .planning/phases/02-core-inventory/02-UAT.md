@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 02-core-inventory
-source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md]
+source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md]
 started: 2026-04-16T00:00:00Z
-updated: 2026-04-16T09:30:00Z
+updated: 2026-04-16T12:30:00Z
 ---
 
 ## Current Test
@@ -21,88 +21,72 @@ expected: Open browser DevTools (or use any API client) and call GET {ingress-ur
 result: pass
 
 ### 3. Inventory Page UI
-expected: Clicking "Inventory" in the sidebar shows a working UI — not a placeholder. You should see something to manage items (a list, add button, etc.), not just the text "Your inventory items will appear here."
-result: issue
-reported: "Your inventory items will appear here."
-severity: major
+expected: Clicking "Inventory" in the sidebar shows a working UI — not a placeholder. You should see an item list (empty state or items), a search bar, and a "+" FAB button in the bottom-right corner. The text "Your inventory items will appear here." should NOT be visible.
+result: pass
 
 ### 4. Add an Item
-expected: There is a way to add a new item in the UI. Fill in a name (e.g. "Milk"), select a category (e.g. "Fridge & freezer"), and save. The new item appears in the list.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+expected: Tap the "+" FAB button. A slide-in drawer opens titled "Add Item" with an empty form. Fill in a name (e.g. "Milk"), select category "Fridge & freezer", leave quantity mode as "Exact count", set quantity to 2. Tap "Save Item". The drawer closes and "Milk" appears in the inventory list under "Fridge & freezer".
+result: pass
 
 ### 5. Edit an Item
-expected: Tap/click an existing item. The edit form opens with the item's current values pre-filled. Change the name or category and save. The list reflects the change immediately.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+expected: Tap/click an existing item row or card. The drawer opens in edit mode — title shows the item name, all fields pre-filled with current values. Change the name to "Oat Milk" and tap "Save Item". The drawer closes and the list shows "Oat Milk".
+result: pass
 
-### 6. Quantity Tracking
-expected: On an item in "exact" quantity mode, increment and decrement the quantity using the UI controls. The displayed count updates immediately (optimistic update). If you decrement below 0, the item status flips to "out" automatically.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+### 6. Quantity Controls — Exact Mode
+expected: On an item in "exact" quantity mode, tap "+" once. The count increments immediately (optimistic update). Tap "−" until count reaches 0. At 0, the item should NOT go negative (button disables or stops at 0). If the count was at 1 and you tap "−", confirm it goes to 0 (not −1).
+result: issue
+reported: "when editing the item, the count is float. in the inventory it is not a float. it should be whole numbers and no float"
+severity: major
 
 ### 7. Status Cycling
-expected: On an item in "status" mode, tapping the status control cycles through have → low → out → have. Each tap updates the displayed status immediately.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+expected: Add or find an item in "status" mode (Have/Low/Out). Tap the status pill. It should cycle: Have → Low → Out → Have. Each tap updates the displayed pill color/label immediately.
+result: pass
 
 ### 8. Item Attribution
-expected: After updating an item, the item shows the name of the HA user who made the change (last_updated_by_name). This should reflect your HA username, not null or "unknown".
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+expected: After saving a change to any item, the item row/card shows "Updated by [your HA username] · Xm ago" (or similar time-ago text). It should reflect your actual HA username, not "null" or "unknown".
+result: issue
+reported: "there is no text that says updated by"
+severity: major
 
 ### 9. Delete an Item
-expected: Delete an item from the UI. It disappears from the list immediately. It does not reappear on page refresh.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory page UI exists — Inventory.jsx is a stub component.
+expected: Tap an item to open the drawer. Tap "Delete". The footer switches to a confirmation row: "Delete [item name]? Yes, delete / Cancel". Tap "Yes, delete". The drawer closes and the item is gone from the list. Refresh the page — item does not reappear.
+result: pass
 
 ### 10. Custom Category Management
-expected: Navigate to a settings or category management UI. Create a new custom category (e.g. "Snacks"), rename it, then delete it. Items previously assigned to a deleted category should show no category (not crash).
-result: blocked
-blocked_by: prior-phase
-reason: No inventory or settings page UI exists — both are stub components.
+expected: Navigate to /settings (Settings link in the nav). Under "Categories", tap "Add" and create "Snacks". It appears in the list with Pencil and Trash icons. Tap Pencil, rename it to "Snacks & sweets", press Enter — the name updates inline. Tap Trash, confirm deletion. "Snacks & sweets" disappears.
+result: pass
 
 ### 11. Default Category Protection
-expected: Try to rename or delete one of the 4 default categories (Food & pantry, Fridge & freezer, etc.). The app should refuse with a clear message — not silently fail or crash.
-result: blocked
-blocked_by: prior-phase
-reason: No inventory or settings page UI exists — both are stub components.
+expected: In /settings under "Categories", the 4 default categories (Food & pantry, Fridge & freezer, Cleaning & household, Personal care) should have NO Pencil or Trash icons — they appear locked/read-only. You should NOT be able to rename or delete them.
+result: pass
+note: User wants default categories to be editable/deletable (design change request — currently locked per spec)
 
 ### 12. Location Management
-expected: Create a new storage location (e.g. "Pantry shelf"), assign it to an item, then delete the location. The item previously assigned to that location should show no location (not crash).
-result: blocked
-blocked_by: prior-phase
-reason: No inventory or settings page UI exists — both are stub components.
+expected: In /settings under "Storage Locations", add a location "Pantry shelf". Assign it to an item (edit the item, set its location). Then delete "Pantry shelf" from Settings. The item previously assigned to it should show no location (not crash or show an error).
+result: pass
 
 ## Summary
 
 total: 12
-passed: 2
-issues: 1
+passed: 10
+issues: 2
 pending: 0
 skipped: 0
-blocked: 9
+blocked: 0
 
 ## Gaps
 
-- truth: "Clicking Inventory in the sidebar shows a working UI to manage items (list, add button, etc.)"
+- truth: "Quantity in exact mode should display and input as whole numbers (integers), not floats"
   status: failed
-  reason: "User reported: Your inventory items will appear here."
+  reason: "User reported: when editing the item, the count is float. in the inventory it is not a float. it should be whole numbers and no float"
   severity: major
-  test: 3
-  root_cause: "Inventory.jsx is a stub component (renders StubPage). The inventory page UI — item list, add/edit/delete, quantity controls, filters — was never implemented as part of Phase 2. Phase 2 built the backend API and frontend hooks/components as foundations, but the actual page was not built."
-  artifacts:
-    - path: "frontend/src/pages/Inventory.jsx"
-      issue: "Stub component — renders <StubPage title='Inventory' body='Your inventory items will appear here.' />"
-    - path: "frontend/src/pages/Settings.jsx"
-      issue: "Stub component — renders <StubPage title='Settings' body='App settings will appear here.' />"
-  missing:
-    - "Inventory page with item list grouped by category, add/edit/delete item forms, quantity controls, status cycling, search/filter"
-    - "Settings page with category and location management UI"
-  debug_session: ""
+  test: 6
+  artifacts: []
+  missing: []
+- truth: "Item row/card should show 'Updated by [HA username] · Xm ago' attribution after saving changes"
+  status: failed
+  reason: "User reported: there is no text that says updated by"
+  severity: major
+  test: 8
+  artifacts: []
+  missing: []
