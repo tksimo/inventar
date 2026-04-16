@@ -12,7 +12,7 @@ import styles from './EmptyState.module.css'
  * The caller passes the icon node already sized, e.g.:
  *   <EmptyState icon={<Package size={48} />} heading="..." body="..." />
  */
-export default function EmptyState({ icon, heading, body, cta }) {
+export default function EmptyState({ icon, heading, body, cta, onCtaClick }) {
   return (
     <div className={styles.container} role="status" aria-live="polite">
       {icon && (
@@ -23,7 +23,7 @@ export default function EmptyState({ icon, heading, body, cta }) {
       {heading && <h2 className={styles.heading}>{heading}</h2>}
       {body && <p className={styles.body}>{body}</p>}
       {cta && (
-        <button type="button" className={styles.cta}>
+        <button type="button" className={styles.cta} onClick={onCtaClick}>
           {cta}
         </button>
       )}
