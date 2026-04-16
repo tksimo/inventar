@@ -167,3 +167,116 @@ def test_migration_0002_is_idempotent_on_downgrade():
     eng.dispose()
 
     assert len(rows) == 4, f"Expected 4 default rows after re-upgrade, got: {len(rows)}"
+
+
+# ---------------------------------------------------------------------------
+# T1-T4: Default-category edit/delete tests (gap-closure plan 02-09)
+# ---------------------------------------------------------------------------
+
+def test_patch_default_category_returns_200(client):
+    """T1: PATCH on a default category (is_default=True) returns 200, not 403."""
+    from db.database import engine
+    from sqlalchemy.orm import Session as SASession
+    from models import Category
+
+    # Seed a default category directly into the test DB
+    with SASession(engine) as session:
+        cat = Category(name="Food & pantry (test)", is_default=True)
+        session.add(cat)
+        session.commit()
+        cat_id = cat.id
+
+    response = client.patch(
+        f"/api/categories/{cat_id}",
+        json={"name": "Pantry (renamed)"},
+    )
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    data = response.json()
+    assert data["name"] == "Pantry (renamed)"
+    assert data["is_default"] is True  # default flag preserved after rename
+
+
+def test_delete_default_category_returns_200(client):
+    """T2: DELETE on a default category returns 200; row gone from GET; items have category_id=NULL."""
+    from db.database import engine
+    from sqlalchemy.orm import Session as SASession
+    from models import Category, Item, QuantityMode
+
+    with SASession(engine) as session:
+        cat = Category(name="Fridge & freezer (test)", is_default=True)
+        session.add(cat)
+        session.commit()
+        cat_id = cat.id
+
+        # Add an item referencing this category
+        item = Item(
+            name="Butter",
+            category_id=cat_id,
+            quantity_mode=QuantityMode.EXACT,
+        )
+        session.add(item)
+        session.commit()
+        item_id = item.id
+
+    response = client.delete(f"/api/categories/{cat_id}")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    assert response.json() == {"ok": True}
+
+    # Row should be gone from GET
+    get_response = client.get(f"/api/categories/{cat_id}")
+    assert get_response.status_code == 404
+
+    # Item should have category_id=NULL
+    with SASession(engine) as session:
+        item_row = session.get(Item, item_id)
+        assert item_row.category_id is None, "Expected category_id to be NULL after default category delete"
+
+
+def test_post_category_always_sets_is_default_false(client):
+    """T3: POST /api/categories/ always creates categories with is_default=False (T-02-15 preserved)."""
+    response = client.post("/api/categories/", json={"name": "My Custom Category (test)"})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["is_default"] is False, "POST must always create is_default=False categories"
+
+
+def test_deleted_default_not_resurrected_by_upgrade():
+    """T4: Deleting a default category + re-running alembic upgrade head does NOT re-insert it.
+
+    INSERT OR IGNORE in migration 0002 only skips on UNIQUE collision.
+    Because alembic_version tracks that 0002 already ran, upgrade head is a no-op
+    and the deleted default stays gone.
+    """
+    tmpdir = tempfile.mkdtemp(prefix="inventar_cat_test_")
+    db_path = os.path.join(tmpdir, "resurrection.db")
+    db_url = f"sqlite:///{db_path}"
+
+    # Fresh DB — upgrade head seeds the 4 defaults
+    _alembic_upgrade(db_url)
+
+    # Delete one default directly via SQL
+    eng = create_engine(db_url)
+    with eng.connect() as conn:
+        conn.execute(text("DELETE FROM categories WHERE name = 'Food & pantry'"))
+        conn.commit()
+
+    # Verify it's gone
+    with eng.connect() as conn:
+        rows = conn.execute(
+            text("SELECT name FROM categories WHERE name = 'Food & pantry'")
+        ).fetchall()
+    assert len(rows) == 0, "Row should be gone before re-upgrade"
+    eng.dispose()
+
+    # Re-run upgrade head — migration 0002 should NOT re-run (version already recorded)
+    _alembic_upgrade(db_url)
+
+    # Row must still be absent
+    eng2 = create_engine(db_url)
+    with eng2.connect() as conn:
+        rows = conn.execute(
+            text("SELECT name FROM categories WHERE name = 'Food & pantry'")
+        ).fetchall()
+    eng2.dispose()
+
+    assert len(rows) == 0, "Deleted default category must NOT be re-seeded on alembic upgrade head"
