@@ -1,0 +1,43 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-md);
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-text-primary);
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.meta {
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+}
+
+.attribution {
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+}
+
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
