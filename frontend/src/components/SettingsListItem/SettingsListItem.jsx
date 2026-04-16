@@ -88,6 +88,7 @@ export default function SettingsListItem({
       // Parent removes entry; component unmounts
     } catch (e) {
       setLocalError(deleteErrorCopy(e?.message))
+    } finally {
       setBusy(false)
     }
   }
