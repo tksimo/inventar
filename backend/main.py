@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from middleware.ingress import IngressUserMiddleware
-from routers import health, items, categories, locations
+from routers import health, items, categories, locations, access_info
 
 app = FastAPI(title="Inventar", version="0.1.0")
 
@@ -26,6 +26,7 @@ app.include_router(health.router)
 app.include_router(items.router)
 app.include_router(categories.router)
 app.include_router(locations.router)
+app.include_router(access_info.router)
 
 # SPA static mount + client-route fallback.
 #
