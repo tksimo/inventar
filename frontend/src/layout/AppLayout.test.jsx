@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AppLayout from './AppLayout.jsx'
@@ -60,9 +60,13 @@ describe('App routes', () => {
     expect(inventoryLink).toHaveAttribute('aria-current', 'page')
   })
 
-  it('renders the Inventory stub copy at /', () => {
+  it('renders the Inventory page at / (heading and search input present)', () => {
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    ))
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Inventory', level: 1 })).toBeInTheDocument()
-    expect(screen.getByText('Your inventory items will appear here.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search items')).toBeInTheDocument()
+    vi.unstubAllGlobals()
   })
 })
