@@ -242,7 +242,7 @@ export default function ItemDrawer({
       await onDelete(item.id)
       onClose()
     } catch {
-      setSaveError('Could not save. Check your connection and try again.')
+      setSaveError('Could not delete. Check your connection and try again.')
     } finally {
       setDeleting(false)
     }
