@@ -1,6 +1,6 @@
 name: "Inventar"
 description: "Home inventory tracker as a Home Assistant add-on"
-version: "0.1.0"
+version: "0.2.0"
 slug: "inventar"
 url: "https://github.com/inventar/inventar"
 arch:
