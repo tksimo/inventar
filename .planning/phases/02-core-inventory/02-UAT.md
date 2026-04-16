@@ -81,12 +81,20 @@ blocked: 0
   reason: "User reported: when editing the item, the count is float. in the inventory it is not a float. it should be whole numbers and no float"
   severity: major
   test: 6
-  artifacts: []
-  missing: []
+  artifacts:
+    - "frontend/src/components/ItemDrawer/ItemDrawer.jsx:385 — step=\"0.1\" causes browser to render 2.0 instead of 2"
+    - "backend/schemas/item.py:31,56,86 — quantity typed as Optional[float] in Pydantic schemas"
+    - "backend/alembic/versions/0001_initial_v1_schema.py:40 — sa.Float() column type"
+  root_cause: "ItemDrawer uses step=\"0.1\" on the quantity input, so the browser renders floats. The API also serializes quantity as float (Pydantic Optional[float] + sa.Float() in DB). The list view hides this via a formatCount() formatter in QuantityControls.jsx."
+  fix: "Change step=\"0.1\" to step=\"1\" in ItemDrawer.jsx:385. For a complete fix also change quantity type to int in schemas/item.py and add a migration changing sa.Float() to sa.Integer()."
 - truth: "Item row/card should show 'Updated by [HA username] · Xm ago' attribution after saving changes"
   status: failed
   reason: "User reported: there is no text that says updated by"
   severity: major
   test: 8
-  artifacts: []
-  missing: []
+  artifacts:
+    - "backend/middleware/ingress.py:37 — reads x-ingress-remote-user-name header; returns None if absent"
+    - "backend/routers/items.py:52 — stores ha_user_name=user.name (NULL if header missing)"
+    - "frontend/src/components/ItemRow.jsx:18 / ItemCard.jsx:19 — attribution hidden when last_updated_by_name is null"
+  root_cause: "The attribution pipeline is correct. The x-ingress-remote-user-name header is only injected by the HA Supervisor ingress proxy. If the add-on is accessed via a direct port URL instead of the HA ingress URL ('Open Web UI' button), the header is never sent, ha_user_name is stored as NULL, and the attribution line is suppressed."
+  fix: "Configuration fix: access the add-on via the HA ingress URL (Open Web UI button), not a direct port. Also ensure the HA user has a display name set in Profile. No code change required."
