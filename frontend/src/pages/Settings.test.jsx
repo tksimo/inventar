@@ -159,8 +159,8 @@ test('T2b: location error shows ErrorState with "Could not load locations"', asy
   })
 })
 
-// T3: Default categories (is_default=true) have no rename/delete buttons; custom ones do
-test('T3: default categories have no rename/delete buttons', async () => {
+// T3: Default categories (is_default=true) now show Pencil + Trash2 just like custom ones
+test('T3: default categories have rename/delete buttons (same as custom)', async () => {
   const categories = [
     { id: 1, name: 'Food & pantry', is_default: true },
     { id: 2, name: 'Snacks', is_default: false },
@@ -170,10 +170,24 @@ test('T3: default categories have no rename/delete buttons', async () => {
   renderSettings()
 
   await screen.findByText('Food & pantry')
-  expect(screen.queryByLabelText('Rename Food & pantry')).toBeNull()
-  expect(screen.queryByLabelText('Delete Food & pantry')).toBeNull()
+  // Default category must now show Pencil + Trash2
+  expect(screen.getByLabelText('Rename Food & pantry')).toBeInTheDocument()
+  expect(screen.getByLabelText('Delete Food & pantry')).toBeInTheDocument()
+  // Custom category unchanged
   expect(screen.getByLabelText('Rename Snacks')).toBeInTheDocument()
   expect(screen.getByLabelText('Delete Snacks')).toBeInTheDocument()
+})
+
+// T3b: Clicking Pencil on a default category enters rename mode (locked=false wiring)
+test('T3b: clicking Pencil on a default category enters rename mode', async () => {
+  const categories = [{ id: 1, name: 'Food & pantry', is_default: true }]
+  vi.stubGlobal('fetch', mockFetch({ categories, locations: [] }))
+
+  renderSettings()
+
+  await screen.findByText('Food & pantry')
+  fireEvent.click(screen.getByLabelText('Rename Food & pantry'))
+  expect(screen.getByLabelText('Rename input for Food & pantry')).toBeInTheDocument()
 })
 
 // T4: Adding a new custom category calls create and the new item appears in the list
