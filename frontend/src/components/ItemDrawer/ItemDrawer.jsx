@@ -383,16 +383,20 @@ export default function ItemDrawer({
                 <input
                   id="item-quantity"
                   type="number"
-                  step="0.1"
+                  step="1"
                   min="0"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className={styles.input}
                   value={form.quantity ?? ''}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      quantity: e.target.value === '' ? null : Number(e.target.value),
-                    }))
-                  }
+                  onChange={(e) => {
+                    if (e.target.value === '') {
+                      setForm((f) => ({ ...f, quantity: null }))
+                    } else {
+                      const v = parseInt(e.target.value, 10)
+                      setForm((f) => ({ ...f, quantity: Number.isFinite(v) ? v : null }))
+                    }
+                  }}
                 />
               </div>
               <div className={styles.field}>
@@ -402,16 +406,20 @@ export default function ItemDrawer({
                 <input
                   id="item-threshold"
                   type="number"
-                  step="0.1"
+                  step="1"
                   min="0"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className={styles.input}
                   value={form.reorderThreshold ?? ''}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      reorderThreshold: e.target.value === '' ? null : Number(e.target.value),
-                    }))
-                  }
+                  onChange={(e) => {
+                    if (e.target.value === '') {
+                      setForm((f) => ({ ...f, reorderThreshold: null }))
+                    } else {
+                      const v = parseInt(e.target.value, 10)
+                      setForm((f) => ({ ...f, reorderThreshold: Number.isFinite(v) ? v : null }))
+                    }
+                  }}
                 />
               </div>
             </>

@@ -195,3 +195,73 @@ it('Test 10: Mode switch — switching quantityMode from exact to status hides r
   // Reorder threshold should be gone
   expect(screen.queryByLabelText('Reorder threshold')).not.toBeInTheDocument()
 })
+
+// Integer quantity input tests (T1-T6)
+describe('Integer quantity inputs', () => {
+  const intItem = { ...defaultItem, quantity: 2, reorder_threshold: 1 }
+
+  it('T1: Edit mode with quantity=2 shows "2" (no decimal) in the quantity input', () => {
+    renderDrawer({ mode: 'edit', item: intItem })
+    const input = screen.getByLabelText('Quantity')
+    expect(input.value).toBe('2')
+  })
+
+  it('T2: Quantity input has step="1"', () => {
+    renderDrawer({ mode: 'edit', item: intItem })
+    const input = screen.getByLabelText('Quantity')
+    expect(input.getAttribute('step')).toBe('1')
+  })
+
+  it('T3: Reorder threshold input has step="1"', () => {
+    renderDrawer({ mode: 'edit', item: intItem })
+    const input = screen.getByLabelText('Reorder threshold')
+    expect(input.getAttribute('step')).toBe('1')
+  })
+
+  it('T4: Typing "3" into quantity input updates form state to integer 3', async () => {
+    const onUpdate = vi.fn().mockResolvedValue(intItem)
+    renderDrawer({ mode: 'edit', item: intItem, onUpdate })
+
+    const input = screen.getByLabelText('Quantity')
+    fireEvent.change(input, { target: { value: '3' } })
+    fireEvent.click(screen.getByText('Save Item'))
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledOnce()
+      const [, patch] = onUpdate.mock.calls[0]
+      expect(patch.quantity).toBe(3)
+    })
+  })
+
+  it('T5: Saving quantity change calls onUpdate with integer typeof quantity', async () => {
+    const onUpdate = vi.fn().mockResolvedValue(intItem)
+    renderDrawer({ mode: 'edit', item: intItem, onUpdate })
+
+    const input = screen.getByLabelText('Quantity')
+    fireEvent.change(input, { target: { value: '5' } })
+    fireEvent.click(screen.getByText('Save Item'))
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledOnce()
+      const [, patch] = onUpdate.mock.calls[0]
+      expect(typeof patch.quantity).toBe('number')
+      expect(Number.isInteger(patch.quantity)).toBe(true)
+      expect(patch.quantity).toBe(5)
+    })
+  })
+
+  it('T6: Clearing the quantity input sets form quantity to null', async () => {
+    const onUpdate = vi.fn().mockResolvedValue(intItem)
+    renderDrawer({ mode: 'edit', item: intItem, onUpdate })
+
+    const input = screen.getByLabelText('Quantity')
+    fireEvent.change(input, { target: { value: '' } })
+    fireEvent.click(screen.getByText('Save Item'))
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledOnce()
+      const [, patch] = onUpdate.mock.calls[0]
+      expect(patch.quantity).toBeNull()
+    })
+  })
+})
