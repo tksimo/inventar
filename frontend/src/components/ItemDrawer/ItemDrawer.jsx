@@ -136,6 +136,14 @@ export default function ItemDrawer({
     nameRef.current?.focus()
   }, [])
 
+  // Keep initialRef in sync when item prop changes (edit mode only)
+  // Prevents stale dirty detection if parent updates the item after mount
+  useEffect(() => {
+    if (mode === 'edit' && item) {
+      initialRef.current = toInitial(item)
+    }
+  }, [item, mode])
+
   // Dirty detection — memoised comparison against initial snapshot
   const isDirty = useMemo(() => {
     const init = initialRef.current
