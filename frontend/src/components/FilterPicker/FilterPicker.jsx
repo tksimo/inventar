@@ -30,7 +30,6 @@ export default function FilterPicker({
               label={c.name}
               active={activeCategoryIds.includes(c.id)}
               onClick={() => onToggleCategory(c.id)}
-              onDismiss={() => onToggleCategory(c.id)}
             />
           ))}
         </div>
@@ -44,7 +43,6 @@ export default function FilterPicker({
               label={l.name}
               active={activeLocationIds.includes(l.id)}
               onClick={() => onToggleLocation(l.id)}
-              onDismiss={() => onToggleLocation(l.id)}
             />
           ))}
         </div>
