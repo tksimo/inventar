@@ -259,3 +259,109 @@ it('Test 8: clicking X (Close drawer button) with clean form closes the drawer w
   // confirm should NOT have been called since form is clean
   expect(window.confirm).not.toHaveBeenCalled()
 })
+
+describe('Barcode scan flow (Phase 3 integration)', () => {
+  afterEach(() => {
+    delete window.__triggerScan
+  })
+
+  function mockFetchWithBarcode({ items = [], categories = [], locations = [], barcodeResponses = {} } = {}) {
+    return vi.fn(async (url) => {
+      const u = String(url)
+      if (u.includes('api/items/')) {
+        return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
+      if (u.includes('api/categories/')) {
+        return new Response(JSON.stringify(categories), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
+      if (u.includes('api/locations/')) {
+        return new Response(JSON.stringify(locations), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
+      if (u.includes('api/barcode/')) {
+        const m = u.match(/api\/barcode\/([^?&#]+)/)
+        const code = m ? decodeURIComponent(m[1]) : ''
+        const spec = barcodeResponses[code]
+        if (!spec) return new Response('{}', { status: 404 })
+        return new Response(JSON.stringify(spec.body ?? {}), { status: spec.status ?? 200, headers: { 'Content-Type': 'application/json' } })
+      }
+      return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+  }
+
+  it('Test A: existing-item barcode opens QuickUpdateSheet (ROADMAP criterion 2)', async () => {
+    const existing = makeItem({ id: 1, name: 'Milk', barcode: '3017624010701', location_id: 10 })
+    vi.stubGlobal('fetch', mockFetchWithBarcode({
+      items: [existing],
+      locations: [{ id: 10, name: 'Fridge' }],
+    }))
+    renderInventory()
+    await screen.findByText('Milk')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scan barcode' }))
+    expect(screen.getByRole('dialog', { name: 'Barcode scanner' })).toBeInTheDocument()
+
+    act(() => { window.__triggerScan('3017624010701') })
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Barcode scanner' })).toBeNull()
+      const sheet = screen.getByRole('dialog')
+      expect(sheet).toHaveAttribute('aria-modal', 'true')
+      const labelledby = sheet.getAttribute('aria-labelledby')
+      expect(document.getElementById(labelledby)).toHaveTextContent('Milk')
+    })
+    expect(screen.queryByText('Add Item')).toBeNull()
+    expect(screen.queryByText('Edit Item')).toBeNull()
+  })
+
+  it('Test B: unknown barcode with OFF match opens ItemDrawer with pre-fill (ROADMAP criterion 3)', async () => {
+    vi.stubGlobal('fetch', mockFetchWithBarcode({
+      items: [],
+      barcodeResponses: {
+        '3017624010701': { status: 200, body: { barcode: '3017624010701', name: 'Nutella', image_url: 'https://x/n.jpg', calories: 539, protein: 6.3, carbs: 57.5, fat: 30.9 } },
+      },
+    }))
+    renderInventory()
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Loading…' })).toBeNull())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scan barcode' }))
+    act(() => { window.__triggerScan('3017624010701') })
+
+    await screen.findByText('Add Item')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Barcode').value).toBe('3017624010701')
+      expect(screen.getByLabelText('Name').value).toBe('Nutella')
+      expect(screen.getByText('Nutrition (per 100g)')).toBeInTheDocument()
+      expect(screen.getByText('539 kcal')).toBeInTheDocument()
+    })
+  })
+
+  it('Test C: unknown barcode with OFF miss opens ItemDrawer barcode-only, NO error (ROADMAP criterion 4, ITEM-08, D-08)', async () => {
+    vi.stubGlobal('fetch', mockFetchWithBarcode({
+      items: [],
+      barcodeResponses: {
+        '0000000000000': { status: 404, body: { detail: 'Product not found' } },
+      },
+    }))
+    renderInventory()
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Loading…' })).toBeNull())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scan barcode' }))
+    act(() => { window.__triggerScan('0000000000000') })
+
+    await screen.findByText('Add Item')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Barcode').value).toBe('0000000000000')
+      expect(screen.getByLabelText('Name').value).toBe('')
+      expect(screen.queryByText('Nutrition (per 100g)')).toBeNull()
+    })
+    expect(document.querySelector('[role="alert"]')).toBeNull()
+  })
+
+  it('Test D: ScanFAB is rendered alongside the Plus FAB', async () => {
+    vi.stubGlobal('fetch', mockFetchWithBarcode({ items: [] }))
+    renderInventory()
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Loading…' })).toBeNull())
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Scan barcode' })).toBeInTheDocument()
+  })
+})
