@@ -3,15 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { absoluteTime } from '../../lib/time.js'
 import styles from './ItemDrawer.module.css'
+import NutritionSection from '../NutritionSection/NutritionSection.jsx'
 
 /**
  * Build an initial form snapshot from an item (or null for add mode).
  * Used for dirty detection and form initialization.
  */
-function toInitial(item) {
+function toInitial(item, overrides = {}) {
   if (!item) {
     return {
-      name: '',
+      name: overrides.name ?? '',
+      barcode: overrides.barcode ?? '',
+      imageUrl: overrides.imageUrl ?? '',
+      calories: overrides.calories ?? null,
+      protein: overrides.protein ?? null,
+      carbs: overrides.carbs ?? null,
+      fat: overrides.fat ?? null,
       categoryId: null,
       locationId: null,
       quantityMode: 'exact',
@@ -23,6 +30,12 @@ function toInitial(item) {
   }
   return {
     name: item.name ?? '',
+    barcode: item.barcode ?? '',
+    imageUrl: item.image_url ?? '',
+    calories: item.calories ?? null,
+    protein: item.protein ?? null,
+    carbs: item.carbs ?? null,
+    fat: item.fat ?? null,
     categoryId: item.category_id ?? null,
     locationId: item.location_id ?? null,
     quantityMode: item.quantity_mode ?? 'exact',
@@ -51,6 +64,12 @@ function buildCreatePayload(f) {
     payload.status = f.status
   }
   if (f.notes.trim()) payload.notes = f.notes.trim()
+  if (f.barcode && f.barcode.trim()) payload.barcode = f.barcode.trim()
+  if (f.imageUrl && f.imageUrl.trim()) payload.image_url = f.imageUrl.trim()
+  if (f.calories != null) payload.calories = f.calories
+  if (f.protein != null) payload.protein = f.protein
+  if (f.carbs != null) payload.carbs = f.carbs
+  if (f.fat != null) payload.fat = f.fat
   return payload
 }
 
@@ -111,13 +130,26 @@ export default function ItemDrawer({
   onCreate,
   onUpdate,
   onDelete,
+  initialName = null,
+  initialBarcode = null,
+  initialImageUrl = null,
+  initialNutrition = null,
 }) {
   const navigate = useNavigate()
   const rootRef = useRef(null)
   const nameRef = useRef(null)
-  const initialRef = useRef(toInitial(mode === 'edit' ? item : null))
+  const overrides = mode === 'add' ? {
+    name: initialName ?? '',
+    barcode: initialBarcode ?? '',
+    imageUrl: initialImageUrl ?? '',
+    calories: initialNutrition?.calories ?? null,
+    protein: initialNutrition?.protein ?? null,
+    carbs: initialNutrition?.carbs ?? null,
+    fat: initialNutrition?.fat ?? null,
+  } : {}
+  const initialRef = useRef(toInitial(mode === 'edit' ? item : null, overrides))
 
-  const [form, setForm] = useState(() => toInitial(mode === 'edit' ? item : null))
+  const [form, setForm] = useState(() => toInitial(mode === 'edit' ? item : null, overrides))
   const [validation, setValidation] = useState({ name: null })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -149,6 +181,12 @@ export default function ItemDrawer({
     const init = initialRef.current
     return (
       form.name !== init.name ||
+      form.barcode !== init.barcode ||
+      form.imageUrl !== init.imageUrl ||
+      form.calories !== init.calories ||
+      form.protein !== init.protein ||
+      form.carbs !== init.carbs ||
+      form.fat !== init.fat ||
       form.categoryId !== init.categoryId ||
       form.locationId !== init.locationId ||
       form.quantityMode !== init.quantityMode ||
@@ -304,6 +342,20 @@ export default function ItemDrawer({
                 {validation.name}
               </p>
             )}
+          </div>
+
+          {/* Barcode (new in Phase 3) */}
+          <div className={styles.field}>
+            <label htmlFor="item-barcode" className={styles.label}>
+              Barcode
+            </label>
+            <input
+              id="item-barcode"
+              className={styles.input}
+              value={form.barcode}
+              onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+              inputMode="numeric"
+            />
           </div>
 
           {/* Category */}
@@ -466,6 +518,15 @@ export default function ItemDrawer({
               Last modified by {item.last_updated_by_name} on {absoluteTime(item.updated_at)}
             </div>
           )}
+
+          {/* Nutrition section — visible only when at least one value is present (D-10) */}
+          <NutritionSection
+            calories={form.calories}
+            protein={form.protein}
+            carbs={form.carbs}
+            fat={form.fat}
+            imageUrl={form.imageUrl || null}
+          />
         </div>
 
         {/* Save error */}
