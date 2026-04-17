@@ -84,6 +84,12 @@ function buildUpdatePatch(initial, current) {
   if (current.categoryId !== initial.categoryId) patch.category_id = current.categoryId
   if (current.locationId !== initial.locationId) patch.location_id = current.locationId
   if (current.notes !== initial.notes) patch.notes = current.notes
+  if (current.barcode !== initial.barcode) patch.barcode = current.barcode
+  if (current.imageUrl !== initial.imageUrl) patch.image_url = current.imageUrl || null
+  if (current.calories !== initial.calories) patch.calories = current.calories
+  if (current.protein !== initial.protein) patch.protein = current.protein
+  if (current.carbs !== initial.carbs) patch.carbs = current.carbs
+  if (current.fat !== initial.fat) patch.fat = current.fat
 
   if (current.quantityMode !== initial.quantityMode) {
     patch.quantity_mode = current.quantityMode
