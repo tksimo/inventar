@@ -140,6 +140,7 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 
 - Position: `position: fixed; inset: 0; z-index: 70` (above ItemDrawer at z-index 60)
 - Background: rgba(0, 0, 0, 0.85) — full screen
+- Primary focal point: the scan region frame (accent-colored aiming corners) — centered in the overlay, all other elements recede visually
 - Scan region: centered rectangle, width = min(80vw, 320px), height = same (square), transparent cutout via border overlay or clip technique
 - Aiming corners: 4 corner L-shapes, --color-accent, no full border (focus visual)
 - Status text: below scan region, --color-text-primary, --font-size-body, center aligned, e.g. "Point camera at a barcode"
@@ -164,13 +165,13 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 - Background: --color-secondary
 - Border-top: 1px solid --color-border
 - Border-radius: 16px 16px 0 0
-- Drag handle: 4px × 32px, background --color-border, centered, margin-top: 12px
+- Drag handle: 4px × 32px, background --color-border, centered, margin-top: var(--space-sm)
 - Entry animation: `transform: translateY(100%)` → `translateY(0)`, 250ms ease-out
 - Dismiss: tap outside (backdrop click), swipe down >40% of sheet height, or "Done" button
 - Backdrop: rgba(0,0,0,0.5), z-index 64
 - Max height: 50dvh — never covers more than half the screen
 - Layout (top to bottom):
-  - Drag handle (12px top margin)
+  - Drag handle (var(--space-sm) top margin)
   - Item name: --font-size-heading, --font-weight-semibold, --color-text-primary, padding: var(--space-md)
   - Location text: --font-size-label, --color-text-secondary, padding: 0 var(--space-md) var(--space-sm)
   - Quantity display: --font-size-display (28px), --font-weight-semibold, --color-text-primary, centered
@@ -208,7 +209,7 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 | Camera overlay status (detecting) | "Barcode detected…" |
 | Camera permission denied heading | "Camera access denied" |
 | Camera permission denied body | "Allow camera access in your browser settings, then try again." |
-| Camera permission denied CTA | "Dismiss" |
+| Camera permission denied CTA | "Got it" |
 | Bottom sheet "Done" button | "Done" |
 | Bottom sheet "Edit item" link | "Edit item" |
 | Bottom sheet quantity label | (no label — quantity value is self-evident from context) |
@@ -237,7 +238,7 @@ No destructive actions in Phase 3 — the bottom sheet "Done" only updates quant
 | Opening | CameraOverlay fades in (150ms), camera stream starts immediately |
 | Scanning | Status text "Point camera at a barcode", animated scan line optional (1px accent line sweeping vertically, 2s loop) |
 | Detected | Status text changes to "Barcode detected…", overlay fades out immediately |
-| Permission denied | Overlay remains, video hidden, error message shown with Dismiss button |
+| Permission denied | Overlay remains, video hidden, error message shown with "Got it" button |
 | User dismisses | X button tapped — overlay fades out, camera stream stopped |
 
 ### Bottom Sheet
