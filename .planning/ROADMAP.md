@@ -70,7 +70,11 @@
   4. User sees an in-app alert when an item drops below its reorder threshold
   5. User can export the shopping list as plain text and share it via a messaging app
   6. In restock mode, scanning a barcode finds the matching item and prompts for quantity to add; restocked items disappear from the shopping list
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 04-01-PLAN.md — Backend migration + GET shopping list (SHOP-01 auto-surfacing)
+  - [ ] 04-02-PLAN.md — Backend write endpoints: POST/DELETE/PATCH/check-off (SHOP-02, SHOP-03, RSTO-03)
+  - [ ] 04-03-PLAN.md — Frontend shopping list page: DnD, share, check-off, nav badge (SHOP-01/02/03/04/05)
+  - [ ] 04-04-PLAN.md — Frontend restock scan flow: camera loop + RestockQuickSheet + no-match toast (RSTO-01/02/03)
 **UI hint**: yes
 
 ### Phase 5: Recipes
@@ -104,7 +108,7 @@
 | 1. Add-on Scaffolding | 4/4 | Complete   | 2026-04-15 |
 | 2. Core Inventory | 8/9 | In Progress|  |
 | 3. Barcode Scanning | 0/? | Not started | - |
-| 4. Shopping & Restock | 0/? | Not started | - |
+| 4. Shopping & Restock | 0/4 | Not started | - |
 | 5. Recipes | 0/? | Not started | - |
 | 6. HA Display Integration | 0/? | Not started | - |
 
