@@ -265,3 +265,78 @@ describe('Integer quantity inputs', () => {
     })
   })
 })
+
+// Phase 3 barcode pre-fill tests (Tests 11–16)
+describe('Barcode pre-fill and NutritionSection', () => {
+  it('Test 11: Add mode with initialBarcode pre-fills Barcode input', () => {
+    renderDrawer({ mode: 'add', initialBarcode: '3017624010701' })
+    expect(screen.getByLabelText('Barcode').value).toBe('3017624010701')
+  })
+
+  it('Test 12: Add mode with initialName pre-fills Name input', () => {
+    renderDrawer({ mode: 'add', initialName: 'Nutella' })
+    expect(screen.getByLabelText('Name').value).toBe('Nutella')
+  })
+
+  it('Test 13: Add mode with initialNutrition renders NutritionSection with pre-filled values', () => {
+    renderDrawer({
+      mode: 'add',
+      initialBarcode: '3017624010701',
+      initialImageUrl: 'https://x/n.jpg',
+      initialNutrition: { calories: 539, protein: 6.3, carbs: 57.5, fat: 30.9 },
+    })
+    expect(screen.getByText('Nutrition (per 100g)')).toBeInTheDocument()
+    expect(screen.getByText('539 kcal')).toBeInTheDocument()
+    expect(screen.getByText('6.3 g')).toBeInTheDocument()
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://x/n.jpg')
+  })
+
+  it('Test 14: Add mode with initialBarcode only — barcode not in OFF — NutritionSection hidden (D-10)', () => {
+    renderDrawer({
+      mode: 'add',
+      initialBarcode: '9999999999999',
+      initialImageUrl: null,
+      initialNutrition: null,
+    })
+    expect(screen.getByLabelText('Barcode').value).toBe('9999999999999')
+    expect(screen.queryByText('Nutrition (per 100g)')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('Test 15: Add mode — saving with pre-filled barcode, name, and nutrition sends those fields in the create payload', async () => {
+    const onCreate = vi.fn().mockResolvedValue({ id: 99, name: 'Nutella' })
+    renderDrawer({
+      mode: 'add',
+      initialName: 'Nutella',
+      initialBarcode: '3017624010701',
+      initialImageUrl: 'https://x/n.jpg',
+      initialNutrition: { calories: 539, protein: 6.3, carbs: 57.5, fat: 30.9 },
+      onCreate,
+    })
+    fireEvent.click(screen.getByText('Save Item'))
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce())
+    const body = onCreate.mock.calls[0][0]
+    expect(body.name).toBe('Nutella')
+    expect(body.barcode).toBe('3017624010701')
+    expect(body.image_url).toBe('https://x/n.jpg')
+    expect(body.calories).toBe(539)
+    expect(body.protein).toBe(6.3)
+    expect(body.carbs).toBe(57.5)
+    expect(body.fat).toBe(30.9)
+  })
+
+  it('Test 16: Edit mode — item with nutrition shows NutritionSection sourced from item fields', () => {
+    const itemWithNutrition = {
+      ...defaultItem,
+      image_url: 'https://x/i.jpg',
+      calories: 200,
+      protein: 10,
+      carbs: 30,
+      fat: 5,
+    }
+    renderDrawer({ mode: 'edit', item: itemWithNutrition })
+    expect(screen.getByText('Nutrition (per 100g)')).toBeInTheDocument()
+    expect(screen.getByText('200 kcal')).toBeInTheDocument()
+    expect(screen.getByText('10 g')).toBeInTheDocument()
+  })
+})
