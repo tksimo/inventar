@@ -103,7 +103,13 @@ def test_barcode_empty_product_name_coerced_to_null(client, monkeypatch):
 
 
 def test_barcode_rejects_non_digit_code(client, monkeypatch):
-    """Non-digit path values must be rejected with HTTP 422 before any outbound HTTP call."""
+    """Non-digit path values must be rejected before any outbound HTTP call.
+
+    abc123 → 422 (FastAPI path validator rejects non-digit pattern).
+    ../secret → 404 (HTTP stack normalizes path traversal before routing;
+    the request never reaches the barcode handler, so httpx is never called).
+    Both outcomes confirm the handler never executes with an unsafe code value.
+    """
     call_tracker: list = []
     _patch_off(monkeypatch, resp=_FakeResp(), call_tracker=call_tracker)
 
@@ -111,9 +117,11 @@ def test_barcode_rejects_non_digit_code(client, monkeypatch):
     assert r1.status_code == 422
 
     r2 = client.get("/api/barcode/../secret")
-    assert r2.status_code == 422
+    # Path traversal is normalized by the ASGI/Starlette layer before routing;
+    # the barcode handler never sees this path — 404 is the correct rejection.
+    assert r2.status_code in (404, 422)
 
-    # FastAPI path validator must reject before handler runs
+    # Either way, httpx must NOT have been called
     assert call_tracker == [], f"httpx was called unexpectedly: {call_tracker}"
 
 
