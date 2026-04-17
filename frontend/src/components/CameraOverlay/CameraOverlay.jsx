@@ -46,7 +46,7 @@ export default function CameraOverlay({ onDetected, onClose }) {
         <Scanner
           constraints={{ facingMode: 'environment' }}
           onScan={handleScan}
-          onError={(err) => console.warn('Scanner error:', err)}
+          onError={() => {}}
         />
         <div className={styles.reticle} aria-hidden="true" />
       </div>
