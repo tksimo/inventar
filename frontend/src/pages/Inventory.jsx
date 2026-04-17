@@ -3,11 +3,15 @@ import { Package, SlidersHorizontal } from 'lucide-react'
 import { useItems } from '../hooks/useItems.js'
 import { useCategories } from '../hooks/useCategories.js'
 import { useLocations } from '../hooks/useLocations.js'
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner.js'
 import ItemRow from '../components/ItemRow/ItemRow.jsx'
 import ItemCard from '../components/ItemCard/ItemCard.jsx'
 import FilterChip from '../components/FilterChip/FilterChip.jsx'
 import FilterPicker from '../components/FilterPicker/FilterPicker.jsx'
 import FAB from '../components/FAB/FAB.jsx'
+import ScanFAB from '../components/ScanFAB/ScanFAB.jsx'
+import CameraOverlay from '../components/CameraOverlay/CameraOverlay.jsx'
+import QuickUpdateSheet from '../components/QuickUpdateSheet/QuickUpdateSheet.jsx'
 import EmptyState from '../components/EmptyState/EmptyState.jsx'
 import LoadingState from '../components/LoadingState/LoadingState.jsx'
 import ErrorState from '../components/ErrorState/ErrorState.jsx'
@@ -19,6 +23,7 @@ export default function Inventory() {
   const { items, loading: itemsLoading, error: itemsError, errorItemId, create, update, remove, updateQuantity, cycleStatus } = useItems()
   const { categories, loading: catsLoading } = useCategories()
   const { locations, loading: locsLoading } = useLocations()
+  const scanner = useBarcodeScanner({ items })
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -248,7 +253,35 @@ export default function Inventory() {
         {renderContent()}
       </main>
       <FAB onClick={openAdd} label="Add item" />
-      {drawerState.open && (
+      <ScanFAB onClick={scanner.openScanner} />
+
+      {/* Camera viewfinder — dismisses itself on detect or close */}
+      {scanner.isOpen && (
+        <CameraOverlay
+          onDetected={scanner.handleDetected}
+          onClose={scanner.closeScanner}
+        />
+      )}
+
+      {/* Existing-item scan result — QuickUpdateSheet (D-03, D-04) */}
+      {scanner.scanState === 'matched' && scanner.matchedItem && (
+        <QuickUpdateSheet
+          item={scanner.matchedItem}
+          locationName={scanner.matchedItem.location_id != null ? locationMap[scanner.matchedItem.location_id] : null}
+          onIncrement={() => updateQuantity(scanner.matchedItem.id, +1)}
+          onDecrement={() => updateQuantity(scanner.matchedItem.id, -1)}
+          onDone={() => scanner.reset()}
+          onEditItem={() => {
+            const matched = scanner.matchedItem
+            scanner.reset()
+            openEdit(matched)
+          }}
+          onClose={() => scanner.reset()}
+        />
+      )}
+
+      {/* Existing add/edit drawer — gated so it does not collide with scan-prefill drawer */}
+      {drawerState.open && scanner.scanState !== 'prefill' && scanner.scanState !== 'fallback' && (
         <ItemDrawer
           mode={drawerState.mode}
           item={drawerState.item}
@@ -256,6 +289,47 @@ export default function Inventory() {
           locations={locations}
           onClose={() => setDrawerState((s) => ({ ...s, open: false }))}
           onCreate={async (body) => { const created = await create(body); return created }}
+          onUpdate={async (id, patch) => update(id, patch)}
+          onDelete={async (id) => remove(id)}
+        />
+      )}
+
+      {/* Scan → OFF prefill drawer (D-07) */}
+      {scanner.scanState === 'prefill' && scanner.prefillProduct && (
+        <ItemDrawer
+          mode="add"
+          item={null}
+          categories={categories}
+          locations={locations}
+          initialName={scanner.prefillProduct.name}
+          initialBarcode={scanner.prefillProduct.barcode}
+          initialImageUrl={scanner.prefillProduct.image_url}
+          initialNutrition={{
+            calories: scanner.prefillProduct.calories,
+            protein: scanner.prefillProduct.protein,
+            carbs: scanner.prefillProduct.carbs,
+            fat: scanner.prefillProduct.fat,
+          }}
+          onClose={() => scanner.reset()}
+          onCreate={async (body) => { const created = await create(body); scanner.reset(); return created }}
+          onUpdate={async (id, patch) => update(id, patch)}
+          onDelete={async (id) => remove(id)}
+        />
+      )}
+
+      {/* Scan → barcode-not-in-OFF fallback drawer (D-08, ITEM-08) */}
+      {scanner.scanState === 'fallback' && scanner.fallbackBarcode && (
+        <ItemDrawer
+          mode="add"
+          item={null}
+          categories={categories}
+          locations={locations}
+          initialName={null}
+          initialBarcode={scanner.fallbackBarcode}
+          initialImageUrl={null}
+          initialNutrition={null}
+          onClose={() => scanner.reset()}
+          onCreate={async (body) => { const created = await create(body); scanner.reset(); return created }}
           onUpdate={async (id, patch) => update(id, patch)}
           onDelete={async (id) => remove(id)}
         />

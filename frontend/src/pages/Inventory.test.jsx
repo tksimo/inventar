@@ -295,7 +295,7 @@ describe('Barcode scan flow (Phase 3 integration)', () => {
       locations: [{ id: 10, name: 'Fridge' }],
     }))
     renderInventory()
-    await screen.findByText('Milk')
+    await screen.findAllByText('Milk')
 
     fireEvent.click(screen.getByRole('button', { name: 'Scan barcode' }))
     expect(screen.getByRole('dialog', { name: 'Barcode scanner' })).toBeInTheDocument()
