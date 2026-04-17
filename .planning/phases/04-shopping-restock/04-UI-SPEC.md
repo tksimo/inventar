@@ -85,7 +85,7 @@ All tokens already in `frontend/src/index.css` — no new tokens required.
 |------|-------|-------|
 | Dominant (60%) | #1C1C1E | Page background, shopping list surface |
 | Secondary (30%) | #2C2C2E | Shopping list row background, check-off quantity sheet surface |
-| Accent (10%) | #3B82F6 | Nav badge, "Add to list" FAB, "Done" in quantity sheet, "Start restocking" prominent button |
+| Accent (10%) | #3B82F6 | Nav badge, "Add to list" FAB, "Add to stock" in quantity sheet, "Start restocking" prominent button |
 | Destructive | #EF4444 | "Remove from list" action only |
 | Text primary | #F2F2F7 | Item name, quantity input value, all primary labels |
 | Text secondary | #8E8E93 | Quantity sub-label, form field labels, instruction copy, empty state body |
@@ -94,7 +94,7 @@ All tokens already in `frontend/src/index.css` — no new tokens required.
 Accent reserved for (explicit list):
 - Nav badge background (low-stock count on Shopping List nav item)
 - "+" FAB background (manual add item to list)
-- "Done" primary action button in check-off quantity sheet
+- "Add to stock" primary action button in check-off quantity sheet
 - "Start restocking" button background — the primary entry point for restock mode
 - Active filter chip background (existing carry-forward)
 - "Save item" primary action button in ItemDrawer (existing carry-forward)
@@ -115,7 +115,7 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 | Component | Path | Description |
 |-----------|------|-------------|
 | ShoppingListRow | frontend/src/components/ShoppingListRow/ShoppingListRow.jsx | Single row in the shopping list. Contains: drag handle (left), checkbox (left), item name + quantity sub-label (flex:1), remove button (right). Minimum 52px height. Drag handle visible at all times on touch devices; on desktop shown on row hover. |
-| CheckOffSheet | frontend/src/components/CheckOffSheet/CheckOffSheet.jsx | Bottom sheet for quantity prompt when checking off a shopping list item. Reuses bottom sheet visual pattern from QuickUpdateSheet (z-index 65, same slide-up animation, same sheet surface). Contains: item name heading, "How many did you buy?" label, numeric stepper (−/+ with value display in 28px display font), Done button, Cancel link. |
+| CheckOffSheet | frontend/src/components/CheckOffSheet/CheckOffSheet.jsx | Bottom sheet for quantity prompt when checking off a shopping list item. Reuses bottom sheet visual pattern from QuickUpdateSheet (z-index 65, same slide-up animation, same sheet surface). Contains: item name heading, "How many did you buy?" label, numeric stepper (−/+ with value display in 28px display font), "Add to stock" button, "Keep on list" link. |
 | ShoppingListPage | frontend/src/pages/ShoppingList.jsx | Full implementation replacing Phase 1 stub. Top bar with page title + Share button. Flat drag-and-drop sortable list of ShoppingListRow items. "Start restocking" button pinned above the FAB or as second FAB. Empty state when list is empty. |
 
 ### Extended Components (Phase 4)
@@ -144,6 +144,8 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 ## Layout & Interaction Contracts
 
 ### Shopping List Page Layout
+
+Primary visual anchor: the shopping list rows — the list is the dominant element occupying the full viewport height below the top bar, with each row as a discrete tap target.
 
 - Page container: padding var(--space-md), max-width none (full width)
 - Top bar: flex row, align-items center, gap var(--space-sm), margin-bottom var(--space-md)
@@ -177,10 +179,10 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
   - Drag handle
   - Item name: --font-size-heading (20px), --font-weight-semibold, padding var(--space-md)
   - Prompt label "How many did you buy?": --font-size-body, --font-weight-regular, --color-text-secondary, padding 0 var(--space-md) var(--space-sm)
-  - Numeric stepper: centered row — minus button (−, 44×44px) + value display (--font-size-display 28px, --font-weight-semibold, min-width 80px, text-align center) + plus button (+, 44×44px). Default value: 1. Minimum: 1 (cannot confirm 0 — use Cancel instead).
+  - Numeric stepper: centered row — minus button (−, 44×44px) + value display (--font-size-display 28px, --font-weight-semibold, min-width 80px, text-align center) + plus button (+, 44×44px). Default value: 1. Minimum: 1 (cannot confirm 0 — use "Keep on list" instead).
   - Footer: 64px height, border-top 1px solid --color-border, padding var(--space-md), flex row gap var(--space-sm)
-    - "Done" button: flex:1, height 40px, --color-accent bg, --font-weight-semibold — primary action
-    - "Cancel" link: width auto, height 40px, padding 0 var(--space-md), transparent bg, --color-text-secondary
+    - "Add to stock" button: flex:1, height 40px, --color-accent bg, --font-weight-semibold — primary action
+    - "Keep on list" link: width auto, height 40px, padding 0 var(--space-md), transparent bg, --color-text-secondary
 
 ### Restock Mode Layout
 
@@ -227,12 +229,12 @@ Source: `frontend/src/index.css` (Phase 1 + Phase 2)
 | Element | Copy |
 |---------|------|
 | Page title | "Shopping List" |
-| Primary CTA (check off item) | "Done" (in CheckOffSheet footer) |
+| Primary CTA (check off item) | "Add to stock" (in CheckOffSheet footer) |
 | Primary CTA (start restocking) | "Start restocking" |
 | Primary CTA (manual add to list) | "+" FAB, aria-label: "Add item to shopping list" |
 | Share button aria-label | "Share shopping list" |
 | Check-off quantity prompt label | "How many did you buy?" |
-| CheckOffSheet cancel | "Cancel" |
+| CheckOffSheet secondary action | "Keep on list" |
 | Restock scan status text | "Scan an item to restock" |
 | Restock Done button | "Done restocking" |
 | Item not found toast | "Item not found" |
@@ -290,9 +292,9 @@ Einkaufsliste
 |-------|--------|
 | Opening | translateY(100%) → translateY(0), 250ms ease-out |
 | Idle | Stepper value at 1; − disabled when value is 1 |
-| Saving | "Done" shows "Saving…", disabled; stepper disabled |
-| Save error | "Done" reverts to label; small error text above footer: "Couldn't save. Try again." (--color-destructive, --font-size-label) |
-| Dismissed (Cancel or backdrop) | Sheet slides down, no changes |
+| Saving | "Add to stock" shows "Saving…", disabled; stepper disabled |
+| Save error | "Add to stock" reverts to label; small error text above footer: "Couldn't save. Try again." (--color-destructive, --font-size-label) |
+| Dismissed ("Keep on list" or backdrop) | Sheet slides down, no changes |
 
 ### Nav Badge
 
