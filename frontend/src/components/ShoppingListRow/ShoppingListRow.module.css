@@ -1,0 +1,84 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 52px;
+  padding: 0 var(--space-md);
+  background: var(--color-dominant);
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.dragHandle {
+  width: 20px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+.dragHandle:disabled { cursor: default; opacity: 0.2; }
+
+.checkbox {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.checkbox::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  display: block;
+}
+
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 var(--space-sm);
+}
+.name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subLabel {
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+}
+
+.remove {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-destructive);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

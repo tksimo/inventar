@@ -11,7 +11,9 @@ import styles from './NavItem.module.css'
  *   icon  - Lucide icon component (passed, not string)
  *   label - visible text label
  */
-export default function NavItem({ to, end, icon: Icon, label }) {
+export default function NavItem({ to, end, icon: Icon, label, badge }) {
+  const showBadge = typeof badge === 'number' && badge > 0
+  const badgeText = showBadge ? (badge > 99 ? '99+' : String(badge)) : null
   return (
     <li className={styles.li}>
       <NavLink
@@ -23,6 +25,11 @@ export default function NavItem({ to, end, icon: Icon, label }) {
       >
         <Icon size={20} aria-hidden="true" className={styles.icon} />
         <span className={styles.label}>{label}</span>
+        {showBadge && (
+          <span className={styles.badge} aria-label={`${badge} items to buy`}>
+            {badgeText}
+          </span>
+        )}
       </NavLink>
     </li>
   )

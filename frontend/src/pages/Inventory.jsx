@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Package, SlidersHorizontal } from 'lucide-react'
-import { useItems } from '../hooks/useItems.js'
+import { useItems as useItemsHook } from '../hooks/useItems.js'
 import { useCategories } from '../hooks/useCategories.js'
 import { useLocations } from '../hooks/useLocations.js'
 import { useBarcodeScanner } from '../hooks/useBarcodeScanner.js'
@@ -19,8 +19,10 @@ import CategorySectionHeader from '../components/CategorySectionHeader/CategoryS
 import ItemDrawer from '../components/ItemDrawer/ItemDrawer.jsx'
 import styles from './Inventory.module.css'
 
-export default function Inventory() {
-  const { items, loading: itemsLoading, error: itemsError, errorItemId, create, update, remove, updateQuantity, cycleStatus } = useItems()
+export default function Inventory({ itemsApi }) {
+  const localApi = useItemsHook()
+  const api = itemsApi ?? localApi
+  const { items, loading: itemsLoading, error: itemsError, errorItemId, create, update, remove, updateQuantity, cycleStatus } = api
   const { categories, loading: catsLoading } = useCategories()
   const { locations, loading: locsLoading } = useLocations()
   const scanner = useBarcodeScanner({ items })
