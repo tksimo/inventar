@@ -97,6 +97,7 @@ class ShoppingListEntry(Base):
     added_manually = Column(Boolean, nullable=False, default=False)
     checked_off = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    sort_order = Column(Integer, nullable=True)
 
 
 __all__ = [
