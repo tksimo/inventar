@@ -2,32 +2,32 @@ import { useState, useCallback } from 'react'
 import { apiFetch } from '../lib/api.js'
 
 /**
- * useBarcodeScanner — orchestrates the Phase 3 barcode scan flow.
+ * useBarcodeScanner — orchestrates barcode scan flows for Phase 3 (scan mode) and
+ * Phase 4 (restock mode).
  *
- * Three scan outcomes (CONTEXT.md D-03/D-05/D-07/D-08, RESEARCH.md Pattern 4):
+ * Mode 'scan' (Phase 3, default):
+ *   Three outcomes — 'matched' | 'prefill' | 'fallback' (see D-03/D-05/D-07/D-08).
  *
- *   1. 'matched'   — code matches an existing item.barcode → caller shows QuickUpdateSheet.
- *   2. 'prefill'   — no local match, OFF lookup returned 200 → caller opens ItemDrawer
- *                    with name/image_url/nutrition pre-filled (D-07).
- *   3. 'fallback'  — no local match, OFF lookup failed (404/timeout/network) → caller
- *                    opens ItemDrawer with ONLY barcode pre-filled, no error shown (D-08).
- *
- * The hook deliberately does NOT expose an `error` field. D-08 requires the user
- * experience for "barcode not in OFF" to be identical to "OFF unreachable" — both
- * quietly open the drawer for manual entry.
+ * Mode 'restock' (Phase 4, D-12/D-14):
+ *   Local-match-only. Two outcomes:
+ *     1. 'matched' — code matches an existing item → caller shows RestockQuickSheet.
+ *     2. restockNoMatch=true, scanState='idle' — code has no local match → caller
+ *        shows "Item not found" toast and re-opens camera. NO OFF lookup, NO fallback.
  */
-export function useBarcodeScanner({ items }) {
+export function useBarcodeScanner({ items, mode = 'scan' }) {
   const [isOpen, setIsOpen] = useState(false)
   const [scanState, setScanState] = useState('idle')
   const [matchedItem, setMatchedItem] = useState(null)
   const [prefillProduct, setPrefillProduct] = useState(null)
   const [fallbackBarcode, setFallbackBarcode] = useState(null)
+  const [restockNoMatch, setRestockNoMatch] = useState(false)
 
   const openScanner = useCallback(() => {
     setScanState('idle')
     setMatchedItem(null)
     setPrefillProduct(null)
     setFallbackBarcode(null)
+    setRestockNoMatch(false)
     setIsOpen(true)
   }, [])
 
@@ -40,13 +40,14 @@ export function useBarcodeScanner({ items }) {
     setMatchedItem(null)
     setPrefillProduct(null)
     setFallbackBarcode(null)
+    setRestockNoMatch(false)
   }, [])
 
   const handleDetected = useCallback(async (rawValue) => {
-    // 1. Close camera immediately (D-02 / UI-SPEC "overlay fades out on detect")
+    // 1. Close camera immediately
     setIsOpen(false)
 
-    // 2. Local match check (D-13: no OFF lookup for known items)
+    // 2. Local match check (no OFF lookup for known items)
     const existing = items.find((i) => i.barcode === rawValue)
     if (existing) {
       setMatchedItem(existing)
@@ -54,7 +55,14 @@ export function useBarcodeScanner({ items }) {
       return
     }
 
-    // 3. OFF proxy lookup via backend
+    // 3. Restock mode: D-14 — no OFF lookup, no fallback state
+    if (mode === 'restock') {
+      setRestockNoMatch(true)
+      setScanState('idle')
+      return
+    }
+
+    // 4. mode === 'scan' — original Phase 3 branch: OFF proxy lookup
     setScanState('looking_up')
     try {
       const res = await apiFetch(`api/barcode/${encodeURIComponent(rawValue)}`)
@@ -72,7 +80,7 @@ export function useBarcodeScanner({ items }) {
       setFallbackBarcode(rawValue)
       setScanState('fallback')
     }
-  }, [items])
+  }, [items, mode])
 
   return {
     isOpen,
@@ -83,6 +91,7 @@ export function useBarcodeScanner({ items }) {
     matchedItem,
     prefillProduct,
     fallbackBarcode,
+    restockNoMatch,
     reset,
   }
 }

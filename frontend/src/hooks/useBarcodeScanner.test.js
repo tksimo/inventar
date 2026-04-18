@@ -159,4 +159,87 @@ describe('useBarcodeScanner', () => {
     expect(result.current.scanState).toBe('idle')
     expect(result.current.matchedItem).toBeNull()
   })
+
+  // ---- Phase 4 restock-mode tests ----
+
+  it('Test 9: mode=restock with matching item sets scanState matched', async () => {
+    const item = makeItem({ id: 5, name: 'Milk', barcode: '3017624010701' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useBarcodeScanner({ items: [item], mode: 'restock' }))
+
+    await act(async () => { await result.current.handleDetected('3017624010701') })
+
+    expect(result.current.scanState).toBe('matched')
+    expect(result.current.matchedItem.id).toBe(5)
+    expect(result.current.restockNoMatch).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('Test 10: mode=restock with unknown barcode sets restockNoMatch=true and skips OFF lookup', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useBarcodeScanner({ items: [], mode: 'restock' }))
+
+    await act(async () => { await result.current.handleDetected('0000000000000') })
+
+    expect(result.current.restockNoMatch).toBe(true)
+    expect(result.current.scanState).toBe('idle')
+    expect(result.current.matchedItem).toBeNull()
+    // D-14: NO OFF lookup in restock mode
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('Test 11: mode=restock never sets prefillProduct or fallbackBarcode', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useBarcodeScanner({ items: [], mode: 'restock' }))
+
+    await act(async () => { await result.current.handleDetected('9999') })
+
+    expect(result.current.prefillProduct).toBeNull()
+    expect(result.current.fallbackBarcode).toBeNull()
+  })
+
+  it('Test 12: reset clears restockNoMatch flag', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    const { result } = renderHook(() => useBarcodeScanner({ items: [], mode: 'restock' }))
+
+    await act(async () => { await result.current.handleDetected('unknown') })
+    expect(result.current.restockNoMatch).toBe(true)
+
+    act(() => { result.current.reset() })
+    expect(result.current.restockNoMatch).toBe(false)
+  })
+
+  it('Test 13: default mode is scan — behaviour unchanged from Phase 3', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 404 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    // Note: mode NOT passed — default of 'scan' applies
+    const { result } = renderHook(() => useBarcodeScanner({ items: [] }))
+
+    await act(async () => { await result.current.handleDetected('0000000000000') })
+
+    await waitFor(() => expect(result.current.scanState).toBe('fallback'))
+    expect(result.current.fallbackBarcode).toBe('0000000000000')
+  })
+
+  it('Test 14: openScanner clears restockNoMatch and resets for next scan', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    const { result } = renderHook(() => useBarcodeScanner({ items: [], mode: 'restock' }))
+
+    await act(async () => { await result.current.handleDetected('unknown') })
+    expect(result.current.restockNoMatch).toBe(true)
+
+    act(() => { result.current.openScanner() })
+
+    expect(result.current.restockNoMatch).toBe(false)
+    expect(result.current.matchedItem).toBeNull()
+    expect(result.current.isOpen).toBe(true)
+    expect(result.current.scanState).toBe('idle')
+  })
 })
