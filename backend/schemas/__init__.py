@@ -5,6 +5,12 @@ Exports the canonical request/response models for all three resource types.
 from schemas.item import ItemCreate, ItemUpdate, ItemResponse
 from schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from schemas.location import LocationCreate, LocationUpdate, LocationResponse
+from schemas.shopping_list import (
+    ShoppingListCreate,
+    ShoppingListUpdate,
+    CheckOffBody,
+    ShoppingListEntryResponse,
+)
 
 __all__ = [
     "ItemCreate",
@@ -16,4 +22,8 @@ __all__ = [
     "LocationCreate",
     "LocationUpdate",
     "LocationResponse",
+    "ShoppingListCreate",
+    "ShoppingListUpdate",
+    "CheckOffBody",
+    "ShoppingListEntryResponse",
 ]
