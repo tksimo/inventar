@@ -4,20 +4,19 @@ import { X } from 'lucide-react'
 import styles from './CameraOverlay.module.css'
 
 /**
- * CameraOverlay — full-screen camera viewfinder dialog hosting the
- * @yudiel/react-qr-scanner Scanner. Fires onDetected exactly once per mount;
- * subsequent scans are ignored to avoid double-dispatch between the library
- * firing repeatedly and the parent unmounting the overlay.
+ * CameraOverlay — full-screen camera viewfinder dialog. Fires onDetected exactly
+ * once per mount (dispatchedRef guard).
  *
  * Props:
  *   onDetected: (rawValue: string) => void
- *   onClose: () => void
+ *   onClose:    () => void
+ *   ariaLabel?: string — overrides default "Barcode scanner" (e.g. "Restock scanner")
+ *   children?:  ReactNode — rendered below the status text (e.g. "Done restocking" button)
  *
- * Escape and the top-right X button both invoke onClose.
- * The overlay is z-index 70 (UI-SPEC) — above ItemDrawer (60) and
- * QuickUpdateSheet (65).
+ * Escape and the X button both invoke onClose.
+ * z-index 70 (UI-SPEC) — above ItemDrawer (60) and QuickUpdateSheet (65).
  */
-export default function CameraOverlay({ onDetected, onClose }) {
+export default function CameraOverlay({ onDetected, onClose, ariaLabel, children }) {
   const dispatchedRef = useRef(false)
 
   const handleScan = (results) => {
@@ -39,7 +38,7 @@ export default function CameraOverlay({ onDetected, onClose }) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Barcode scanner"
+      aria-label={ariaLabel ?? 'Barcode scanner'}
       className={styles.overlay}
     >
       <div className={styles.scannerWrap}>
@@ -51,6 +50,7 @@ export default function CameraOverlay({ onDetected, onClose }) {
         <div className={styles.reticle} aria-hidden="true" />
       </div>
       <p className={styles.status}>Point camera at a barcode</p>
+      {children}
       <button
         type="button"
         className={styles.close}

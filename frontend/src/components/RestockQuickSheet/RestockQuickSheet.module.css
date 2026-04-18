@@ -1,0 +1,118 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 64;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 65;
+  background: var(--color-secondary);
+  border-top: 1px solid var(--color-border);
+  border-radius: 16px 16px 0 0;
+  padding-bottom: var(--space-md);
+  max-height: 50dvh;
+  overflow: auto;
+  animation: slideUp 250ms ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.handle {
+  width: 32px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  margin: var(--space-sm) auto 0;
+}
+
+.itemName {
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--font-line-heading);
+  padding: var(--space-md) var(--space-md) 0;
+  margin: 0;
+}
+
+.promptLabel {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  padding: 0 var(--space-md) var(--space-sm);
+  margin: 0;
+}
+
+.stepperRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.stepBtn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.stepBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.value {
+  min-width: 80px;
+  text-align: center;
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.error {
+  color: var(--color-destructive);
+  font-size: var(--font-size-label);
+  padding: 0 var(--space-md);
+  margin: 0 0 var(--space-sm);
+}
+
+.footer {
+  height: 64px;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.addBtn {
+  flex: 1;
+  height: 40px;
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
