@@ -2,11 +2,14 @@
 
 Wave 0 tests (1-12) cover the auto-population contract, deduplication, and ordering.
 They FAIL before the router is registered (RED phase) and PASS after Task 2 (GREEN phase).
+
+Wave 1 tests (13-30) cover the write endpoints: POST/DELETE/PATCH/check-off.
+They FAIL (RED) until Plan 02 Task 2 implements the endpoints (GREEN).
 """
 import pytest
 from sqlalchemy import inspect
 from db.database import engine, SessionLocal
-from models import Item, ShoppingListEntry, QuantityMode, StockStatus
+from models import Item, ShoppingListEntry, QuantityMode, StockStatus, Transaction
 
 
 @pytest.fixture()
@@ -170,3 +173,196 @@ def test_sort_order_ordering(client, db_session):
     body = client.get("/api/shopping-list/").json()
     names = [row["item_name"] for row in body]
     assert names == ["Bananas", "Apples", "Cherries"]
+
+
+# ---------------------------------------------------------------------------
+# Wave 1: Write endpoints (Tests 13-30) — RED until Plan 02 Task 2
+# ---------------------------------------------------------------------------
+
+
+def test_post_manual_add_creates_entry(client, db_session):
+    # SHOP-02: manual add creates a persisted row with added_manually=True
+    item = _make_item(db_session, name="Butter", threshold=None, quantity=10)
+    r = client.post("/api/shopping-list/", json={"item_id": item.id})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id"] is not None
+    assert body["item_id"] == item.id
+    assert body["added_manually"] is True
+    assert body["sort_order"] == 1
+    assert body["auto"] is False
+
+
+def test_post_second_add_assigns_next_sort_order(client, db_session):
+    # Second manual add gets sort_order=2
+    a = _make_item(db_session, name="A")
+    b = _make_item(db_session, name="B")
+    client.post("/api/shopping-list/", json={"item_id": a.id})
+    r = client.post("/api/shopping-list/", json={"item_id": b.id})
+    assert r.json()["sort_order"] == 2
+
+
+def test_post_duplicate_returns_409(client, db_session):
+    # Pitfall 2: no duplicate entries per item_id
+    item = _make_item(db_session)
+    r1 = client.post("/api/shopping-list/", json={"item_id": item.id})
+    assert r1.status_code == 201
+    r2 = client.post("/api/shopping-list/", json={"item_id": item.id})
+    assert r2.status_code == 409
+    assert "already" in r2.json()["detail"].lower()
+
+
+def test_post_unknown_item_returns_404(client, db_session):
+    r = client.post("/api/shopping-list/", json={"item_id": 99999})
+    assert r.status_code == 404
+
+
+def test_post_archived_item_returns_404(client, db_session):
+    item = _make_item(db_session, archived=True)
+    r = client.post("/api/shopping-list/", json={"item_id": item.id})
+    assert r.status_code == 404
+
+
+def test_post_extra_fields_rejected(client, db_session):
+    # T-04-01: extra fields must be rejected (extra="forbid" on ShoppingListCreate)
+    item = _make_item(db_session)
+    r = client.post("/api/shopping-list/", json={"item_id": item.id, "checked_off": True})
+    assert r.status_code == 422
+
+
+def test_delete_removes_entry(client, db_session):
+    item = _make_item(db_session, name="Apples", threshold=None, quantity=5)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    r = client.delete(f"/api/shopping-list/{entry_id}")
+    assert r.status_code in (200, 204)
+    body = client.get("/api/shopping-list/").json()
+    assert all(row.get("id") != entry_id for row in body)
+
+
+def test_delete_unknown_returns_404(client, db_session):
+    assert client.delete("/api/shopping-list/99999").status_code == 404
+
+
+def test_patch_updates_sort_order(client, db_session):
+    a = _make_item(db_session, name="A")
+    b = _make_item(db_session, name="B")
+    e1 = client.post("/api/shopping-list/", json={"item_id": a.id}).json()["id"]
+    client.post("/api/shopping-list/", json={"item_id": b.id})
+    r = client.patch(f"/api/shopping-list/{e1}", json={"sort_order": 99})
+    assert r.status_code == 200
+    assert r.json()["sort_order"] == 99
+
+
+def test_patch_sort_order_out_of_bounds_returns_422(client, db_session):
+    # T-04-09: sort_order must be in [1, 10000]
+    item = _make_item(db_session)
+    e = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    assert client.patch(f"/api/shopping-list/{e}", json={"sort_order": 0}).status_code == 422
+    assert client.patch(f"/api/shopping-list/{e}", json={"sort_order": 999999}).status_code == 422
+
+
+def test_patch_unknown_returns_404(client, db_session):
+    assert client.patch("/api/shopping-list/99999", json={"sort_order": 1}).status_code == 404
+
+
+def test_check_off_removes_entry_when_above_threshold(client, db_session):
+    # SHOP-03, D-08 non-zero threshold: quantity+added >= threshold → remove
+    item = _make_item(db_session, name="Milk", threshold=3, quantity=1)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    r = client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": 3})
+    assert r.status_code == 200
+    db_session.expire_all()
+    refreshed = db_session.query(Item).filter(Item.id == item.id).one()
+    assert refreshed.quantity == 4
+    body = client.get("/api/shopping-list/").json()
+    assert all(row.get("id") != entry_id for row in body)
+    # Attribution transaction recorded
+    txns = db_session.query(Transaction).filter(
+        Transaction.item_id == item.id,
+        Transaction.action == "quantity_change",
+    ).all()
+    assert len(txns) == 1
+    assert txns[0].delta == 3
+
+
+def test_check_off_keeps_entry_when_below_threshold(client, db_session):
+    # Pitfall 6: threshold=5, bought 1 → new qty 2 < threshold → entry stays
+    item = _make_item(db_session, name="Bread", threshold=5, quantity=1)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    r = client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": 1})
+    assert r.status_code == 200
+    db_session.expire_all()
+    assert db_session.query(Item).filter(Item.id == item.id).one().quantity == 2
+    body = client.get("/api/shopping-list/").json()
+    found = [row for row in body if row.get("id") == entry_id]
+    assert len(found) == 1
+    assert found[0]["quantity"] == 2
+
+
+def test_check_off_removes_when_threshold_zero(client, db_session):
+    # D-08 default path: threshold=0, bought 1 → new_qty=1 >= 0 → removed
+    item = _make_item(db_session, name="Salt", threshold=0, quantity=0)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    r = client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": 1})
+    assert r.status_code == 200
+    db_session.expire_all()
+    assert db_session.query(Item).filter(Item.id == item.id).one().quantity == 1
+    body = client.get("/api/shopping-list/").json()
+    assert all(row.get("id") != entry_id for row in body)
+
+
+def test_check_off_flips_status_item_to_exact(client, db_session):
+    # RSTO-03 + status mode: restocking flips to exact with new quantity
+    item = _make_item(
+        db_session, name="Oil",
+        quantity_mode=QuantityMode.STATUS,
+        status=StockStatus.OUT,
+        quantity=None, threshold=None,
+    )
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    r = client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": 2})
+    assert r.status_code == 200
+    db_session.expire_all()
+    refreshed = db_session.query(Item).filter(Item.id == item.id).one()
+    assert refreshed.quantity_mode == QuantityMode.EXACT
+    assert refreshed.quantity == 2
+    assert refreshed.status is None
+    body = client.get("/api/shopping-list/").json()
+    assert all(row.get("id") != entry_id for row in body)
+
+
+def test_check_off_quantity_added_must_be_positive(client, db_session):
+    # T-04-02: quantity_added must be > 0
+    item = _make_item(db_session)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    assert client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": 0}).status_code == 422
+    assert client.post(f"/api/shopping-list/{entry_id}/check-off", json={"quantity_added": -3}).status_code == 422
+
+
+def test_check_off_unknown_returns_404(client, db_session):
+    r = client.post("/api/shopping-list/99999/check-off", json={"quantity_added": 1})
+    assert r.status_code == 404
+
+
+def test_check_off_records_transaction_attribution(client, db_session):
+    # T-04-11: check-off records ha_user_name from HA ingress header
+    # Using same headers as test_items.py attribution tests
+    item = _make_item(db_session, name="Eggs", threshold=3, quantity=1)
+    entry_id = client.post("/api/shopping-list/", json={"item_id": item.id}).json()["id"]
+    headers = {
+        "X-Ingress-Remote-User-Name": "Alice",
+        "X-Ingress-Remote-User-ID": "alice-123",
+    }
+    r = client.post(
+        f"/api/shopping-list/{entry_id}/check-off",
+        json={"quantity_added": 3},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    db_session.expire_all()
+    txn = db_session.query(Transaction).filter(
+        Transaction.item_id == item.id,
+        Transaction.action == "quantity_change",
+    ).order_by(Transaction.id.desc()).first()
+    assert txn is not None
+    assert txn.ha_user_name == "Alice"
