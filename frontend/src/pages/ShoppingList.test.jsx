@@ -3,6 +3,27 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
+// Mock CameraOverlay — exposes ariaLabel, onDetected, onClose, children
+// Must be at the top level (vitest hoists vi.mock calls)
+vi.mock('../components/CameraOverlay/CameraOverlay.jsx', () => ({
+  default: function MockCameraOverlay({ ariaLabel, onDetected, onClose, children }) {
+    return (
+      <div role="dialog" aria-modal="true" aria-label={ariaLabel ?? 'Barcode scanner'}>
+        <p>[camera placeholder]</p>
+        <button
+          type="button"
+          onClick={() => onDetected('__test_barcode__')}
+          aria-label="__simulate_detected__"
+        >
+          Simulate detected
+        </button>
+        {children}
+        <button type="button" onClick={onClose} aria-label="Close camera">Close</button>
+      </div>
+    )
+  },
+}))
+
 // Mock the hook so we control entries
 const mockHook = {
   entries: [],
@@ -36,7 +57,26 @@ const sampleEntry = {
   auto: false, location_id: null,
 }
 
-function renderPage({ entries = [], itemsApi = { items: [] } } = {}) {
+function makeItemsApiMock({ items = [], updateQuantity = vi.fn(() => Promise.resolve()) } = {}) {
+  return {
+    items,
+    loading: false,
+    error: null,
+    create: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+    updateQuantity,
+    cycleStatus: vi.fn(),
+    refetch: vi.fn(),
+  }
+}
+
+function mockUseShoppingList({ entries = [], checkOff = vi.fn(() => Promise.resolve({ removed: true })) } = {}) {
+  mockHook.entries = entries
+  mockHook.checkOff = checkOff
+}
+
+function renderPage({ entries = [], itemsApi = makeItemsApiMock() } = {}) {
   mockHook.entries = entries
   return render(
     <BrowserRouter>
@@ -50,6 +90,7 @@ describe('ShoppingList page', () => {
     mockHook.entries = []
     mockHook.loading = false
     mockHook.error = null
+    mockHook.checkOff = vi.fn(() => Promise.resolve({ ok: true }))
     shareText.mockClear()
   })
 
@@ -83,5 +124,128 @@ describe('ShoppingList page', () => {
   it('FAB exists with aria-label "Add item to shopping list"', () => {
     renderPage()
     expect(screen.getByLabelText('Add item to shopping list')).toBeInTheDocument()
+  })
+
+  // ---- Phase 4 Plan 04 restock-mode tests ----
+
+  it('Test 6: Tapping Start restocking opens CameraOverlay with aria-label=Restock scanner and a Done restocking button', async () => {
+    const user = userEvent.setup()
+    const itemsApi = makeItemsApiMock({
+      items: [{ id: 42, name: 'Milk', barcode: '__test_barcode__', quantity_mode: 'exact', quantity: 0 }],
+    })
+    mockUseShoppingList({ entries: [] })
+
+    render(
+      <BrowserRouter>
+        <ShoppingList itemsApi={itemsApi} />
+      </BrowserRouter>
+    )
+
+    const startBtn = screen.getByRole('button', { name: /start restocking/i })
+    expect(startBtn.hasAttribute('disabled')).toBe(false)
+
+    await user.click(startBtn)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Restock scanner' })
+    expect(dialog).toBeTruthy()
+    expect(screen.getByRole('button', { name: /done restocking/i })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /start restocking/i })).toBeNull()
+  })
+
+  it('Test 7: Scanning a matched barcode opens RestockQuickSheet, Add to stock calls updateQuantity + checkOff then re-opens camera', async () => {
+    const user = userEvent.setup()
+    const updateQuantity = vi.fn().mockResolvedValue(undefined)
+    const checkOff = vi.fn().mockResolvedValue({ removed: true })
+    const itemsApi = makeItemsApiMock({
+      items: [{ id: 42, name: 'Milk', barcode: '__test_barcode__', quantity_mode: 'exact', quantity: 0 }],
+      updateQuantity,
+    })
+    mockUseShoppingList({
+      entries: [{ id: 7, item_id: 42, item: { id: 42, name: 'Milk', quantity: 0 }, sort_order: 1 }],
+      checkOff,
+    })
+
+    render(
+      <BrowserRouter>
+        <ShoppingList itemsApi={itemsApi} />
+      </BrowserRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /start restocking/i }))
+    await user.click(screen.getByRole('button', { name: '__simulate_detected__' }))
+
+    // RestockQuickSheet visible
+    const sheet = await screen.findByRole('dialog', { name: 'Milk' })
+    expect(sheet).toBeTruthy()
+
+    // Default delta = 1
+    await user.click(screen.getByRole('button', { name: 'Add to stock' }))
+
+    await waitFor(() => expect(updateQuantity).toHaveBeenCalledWith(42, 1))
+    expect(checkOff).toHaveBeenCalledWith(7, 1)
+
+    // Sheet dismissed, camera re-opened
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Milk' })).toBeNull()
+      expect(screen.getByRole('dialog', { name: 'Restock scanner' })).toBeTruthy()
+    })
+  })
+
+  it('Test 8: Scanning an unknown barcode shows "Item not found" toast; camera re-opens', async () => {
+    const user = userEvent.setup()
+    const itemsApi = makeItemsApiMock({ items: [] }) // no matches at all
+    mockUseShoppingList({ entries: [] })
+
+    render(
+      <BrowserRouter>
+        <ShoppingList itemsApi={itemsApi} />
+      </BrowserRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /start restocking/i }))
+    await user.click(screen.getByRole('button', { name: '__simulate_detected__' }))
+
+    const statuses = await screen.findAllByRole('status')
+    const toast = statuses.find((el) => el.textContent.includes('Item not found'))
+    expect(toast).toBeTruthy()
+
+    // Camera should still be present (or re-appear) — assert the restock dialog is in document
+    expect(screen.getByRole('dialog', { name: 'Restock scanner' })).toBeTruthy()
+  })
+
+  it('Test 9: Done restocking closes the overlay and returns to the shopping list', async () => {
+    const user = userEvent.setup()
+    const itemsApi = makeItemsApiMock({ items: [] })
+    mockUseShoppingList({ entries: [] })
+
+    render(
+      <BrowserRouter>
+        <ShoppingList itemsApi={itemsApi} />
+      </BrowserRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /start restocking/i }))
+    await user.click(screen.getByRole('button', { name: /done restocking/i }))
+
+    expect(screen.queryByRole('dialog', { name: 'Restock scanner' })).toBeNull()
+    expect(screen.getByRole('button', { name: /start restocking/i })).toBeTruthy()
+  })
+
+  it('Test 10: Escape (via overlay Close) also exits restock mode', async () => {
+    const user = userEvent.setup()
+    const itemsApi = makeItemsApiMock({ items: [] })
+    mockUseShoppingList({ entries: [] })
+
+    render(
+      <BrowserRouter>
+        <ShoppingList itemsApi={itemsApi} />
+      </BrowserRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /start restocking/i }))
+    await user.click(screen.getByRole('button', { name: 'Close camera' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Restock scanner' })).toBeNull()
+    expect(screen.getByRole('button', { name: /start restocking/i })).toBeTruthy()
   })
 })

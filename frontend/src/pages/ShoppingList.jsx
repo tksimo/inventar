@@ -7,8 +7,12 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable'
 import { useShoppingList } from '../hooks/useShoppingList.js'
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner.js'
 import ShoppingListRow from '../components/ShoppingListRow/ShoppingListRow.jsx'
 import CheckOffSheet from '../components/CheckOffSheet/CheckOffSheet.jsx'
+import CameraOverlay from '../components/CameraOverlay/CameraOverlay.jsx'
+import RestockQuickSheet from '../components/RestockQuickSheet/RestockQuickSheet.jsx'
+import Toast from '../components/Toast/Toast.jsx'
 import EmptyState from '../components/EmptyState/EmptyState.jsx'
 import FAB from '../components/FAB/FAB.jsx'
 import { shareText, formatShoppingList } from '../lib/share.js'
@@ -19,17 +23,27 @@ import styles from './ShoppingList.module.css'
  *
  * Covers: SHOP-01 (list), SHOP-02 (manual add), SHOP-03 (check-off),
  *         SHOP-05 (share). Nav badge (SHOP-04) is driven by AppLayout.
- *
- * "Start restocking" button is rendered but disabled; Plan 04 wires
- * the actual restock handler via props.onStartRestock.
+ *         RSTO-01/02/03: restock scan loop via "Start restocking" button.
  */
-export default function ShoppingList({ itemsApi, onStartRestock }) {
-  const { entries, loading, error, addManual, removeEntry, reorder, checkOff } = useShoppingList()
+export default function ShoppingList({ itemsApi }) {
+  const shoppingList = useShoppingList()
+  const { entries, loading, error, addManual, removeEntry, reorder, checkOff } = shoppingList
+
   const [checkingOff, setCheckingOff] = useState(null) // entry being checked off
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerSearch, setPickerSearch] = useState('')
   const [undoEntry, setUndoEntry] = useState(null)
   const [copiedToastVisible, setCopiedToastVisible] = useState(false)
+
+  // Restock mode state
+  const [restockMode, setRestockMode] = useState(false)
+  const [restockSaving, setRestockSaving] = useState(false)
+  const [restockSaveError, setRestockSaveError] = useState(null)
+
+  const restockScanner = useBarcodeScanner({
+    items: itemsApi?.items ?? [],
+    mode: 'restock',
+  })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -90,6 +104,40 @@ export default function ShoppingList({ itemsApi, onStartRestock }) {
     await addManual(itemId)
     setPickerOpen(false)
     setPickerSearch('')
+  }
+
+  // Restock handlers
+  const onStartRestock = () => {
+    setRestockMode(true)
+    setRestockSaveError(null)
+    restockScanner.openScanner()
+  }
+
+  const exitRestock = () => {
+    setRestockMode(false)
+    setRestockSaveError(null)
+    restockScanner.reset()
+    restockScanner.closeScanner()
+  }
+
+  const onAddToStock = async (delta) => {
+    const matched = restockScanner.matchedItem
+    if (!matched) return
+    setRestockSaving(true)
+    setRestockSaveError(null)
+    try {
+      await itemsApi.updateQuantity(matched.id, delta)
+      const entry = entries.find((e) => e.item_id === matched.id)
+      if (entry && entry.id != null) {
+        await checkOff(entry.id, delta)
+      }
+      setRestockSaving(false)
+      restockScanner.reset()
+      restockScanner.openScanner() // re-arm for next scan
+    } catch {
+      setRestockSaving(false)
+      setRestockSaveError("Couldn't save. Try again.")
+    }
   }
 
   // Items eligible for manual add = non-archived items not already on the list
@@ -156,13 +204,12 @@ export default function ShoppingList({ itemsApi, onStartRestock }) {
           </DndContext>
         )}
 
-        {entries.length > 0 && (
+        {!restockMode && (
           <button
             type="button"
             className={styles.restockBtn}
             aria-label="Start restocking mode"
-            disabled={!onStartRestock}
-            onClick={() => onStartRestock?.()}
+            onClick={onStartRestock}
           >
             Start restocking
           </button>
@@ -230,6 +277,46 @@ export default function ShoppingList({ itemsApi, onStartRestock }) {
 
       {copiedToastVisible && (
         <div role="status" aria-live="polite" className={styles.copiedToast}>Copied!</div>
+      )}
+
+      {/* Restock mode overlays */}
+      {restockMode && !restockScanner.matchedItem && (
+        <CameraOverlay
+          ariaLabel="Restock scanner"
+          onDetected={restockScanner.handleDetected}
+          onClose={exitRestock}
+        >
+          <button
+            type="button"
+            className={styles.doneRestocking}
+            onClick={exitRestock}
+          >
+            Done restocking
+          </button>
+        </CameraOverlay>
+      )}
+
+      {restockMode && restockScanner.matchedItem && (
+        <RestockQuickSheet
+          item={restockScanner.matchedItem}
+          saving={restockSaving}
+          error={restockSaveError}
+          onAddToStock={onAddToStock}
+          onClose={() => {
+            restockScanner.reset()
+            restockScanner.openScanner()
+          }}
+        />
+      )}
+
+      {restockMode && restockScanner.restockNoMatch && (
+        <Toast
+          message="Item not found"
+          onDismiss={() => {
+            restockScanner.reset()
+            restockScanner.openScanner()
+          }}
+        />
       )}
     </div>
   )
