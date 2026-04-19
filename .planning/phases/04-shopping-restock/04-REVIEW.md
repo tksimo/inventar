@@ -1,71 +1,61 @@
 ---
 phase: 04-shopping-restock
-reviewed: 2026-04-18T00:00:00Z
+reviewed: 2026-04-19T00:00:00Z
 depth: standard
-files_reviewed: 33
+files_reviewed: 6
 files_reviewed_list:
-  - backend/alembic/versions/0004_add_sort_order_to_shopping_list.py
-  - backend/main.py
-  - backend/models/__init__.py
   - backend/routers/shopping_list.py
-  - backend/schemas/__init__.py
-  - backend/schemas/shopping_list.py
   - backend/tests/test_shopping_list.py
-  - frontend/package.json
-  - frontend/src/App.jsx
-  - frontend/src/components/CameraOverlay/CameraOverlay.jsx
-  - frontend/src/components/CheckOffSheet/CheckOffSheet.jsx
-  - frontend/src/components/CheckOffSheet/CheckOffSheet.module.css
-  - frontend/src/components/CheckOffSheet/CheckOffSheet.test.jsx
-  - frontend/src/components/RestockQuickSheet/RestockQuickSheet.jsx
-  - frontend/src/components/RestockQuickSheet/RestockQuickSheet.module.css
-  - frontend/src/components/RestockQuickSheet/RestockQuickSheet.test.jsx
-  - frontend/src/components/ShoppingListRow/ShoppingListRow.jsx
-  - frontend/src/components/ShoppingListRow/ShoppingListRow.module.css
-  - frontend/src/components/ShoppingListRow/ShoppingListRow.test.jsx
-  - frontend/src/components/Toast/Toast.jsx
-  - frontend/src/components/Toast/Toast.module.css
-  - frontend/src/components/Toast/Toast.test.jsx
-  - frontend/src/hooks/useBarcodeScanner.js
-  - frontend/src/hooks/useBarcodeScanner.test.js
   - frontend/src/hooks/useShoppingList.js
   - frontend/src/hooks/useShoppingList.test.js
-  - frontend/src/layout/AppLayout.jsx
-  - frontend/src/layout/NavItem.jsx
-  - frontend/src/layout/NavItem.module.css
-  - frontend/src/lib/share.js
-  - frontend/src/lib/share.test.js
-  - frontend/src/pages/Inventory.jsx
   - frontend/src/pages/ShoppingList.jsx
-  - frontend/src/pages/ShoppingList.module.css
   - frontend/src/pages/ShoppingList.test.jsx
 findings:
   critical: 0
-  warning: 5
-  info: 4
-  total: 9
+  warning: 6
+  info: 6
+  total: 12
 status: issues_found
 ---
 
-# Phase 04: Code Review Report
+# Phase 04: Code Review Report (Updated — Plans 04-05 and 04-06)
 
-**Reviewed:** 2026-04-18
+**Reviewed:** 2026-04-19
 **Depth:** standard
-**Files Reviewed:** 33
+**Files Reviewed:** 6 (gap-closure files only; prior 33-file review on 2026-04-18 is superseded for these files)
 **Status:** issues_found
 
 ## Summary
 
-Phase 04 implements the shopping list page with drag-and-drop ordering, check-off with restock,
-manual add via picker, share/export, and a restock camera-scan loop. The overall architecture
-is sound: the backend is well-structured with correct Pydantic validation, proper deduplication,
-and atomic restock logic. The frontend hook design is clean and the test suite is comprehensive.
+This review covers the gap-closure changes from Plans 04-05 and 04-06:
 
-Five warnings and four info items were found. There are no critical issues (no security
-vulnerabilities, no data-loss paths, no authentication bypasses). The most important warnings
-are a silent-failure path in the restock flow (`onAddToStock` swallows the check-off error
-independently of the inventory-update error) and a stale-closure hazard in `useShoppingList`'s
-`removeEntry` callback.
+- **Plan 04-05**: new `POST /api/shopping-list/items/{item_id}/restock` backend endpoint; `checkOff`
+  hook updated to route to the new endpoint for auto-entries; `CheckOffSheet` confirm handler updated
+  to pass `item_id`; 13 new tests across backend and frontend.
+- **Plan 04-06**: `suppressedItemIds` Set state, `handleRemoveAuto`, updated `handleUndo`, filtered
+  `autoEntries` useMemo; 4 new frontend page tests (H–K).
+
+There are no critical issues. The backend endpoint is correct and its test suite is comprehensive.
+The `checkOff` routing logic is sound. The auto-entry suppress/undo flow is implemented correctly
+for the dismiss case.
+
+**WR-03 from the prior review is now resolved**: auto-entries now pass `handleRemoveAuto` as
+`onRemove`, so the remove button is functional.
+
+Two new warnings are introduced by the gap-closure changes:
+
+- WR-05-NEW (extends prior WR-02): the `onAddToStock` restock-scan handler still does not invoke
+  `checkOff` for auto-entries (id=null), so the shopping list is not refreshed after scanning and
+  restocking an auto-entry item.
+- WR-06-NEW: `restock_by_item` contains the same redundant `db.refresh(item)` call identified in
+  WR-04 for `check_off_shopping_list_entry`.
+
+Two new info items are introduced:
+
+- IN-05-NEW: the EmptyState guard checks `entries.length === 0` (raw hook array) rather than the
+  filtered view, so suppressing all auto-entries leaves a blank body with no "Nothing to buy" text.
+- IN-06-NEW: Test 7 covers only the persisted-entry (id=7) restock scan path; the auto-entry
+  (id=null) scan-restock code path has no test.
 
 ---
 
@@ -81,13 +71,10 @@ render, so single-call usage is fine. However, the optimistic `setEntries((prev)
 functional updater, while the snapshot variable still refers to the array captured at
 callback-creation time. If two removes are dispatched in the same render cycle (e.g., rapid
 double-tap), the second call's snapshot already excludes the first removal, so a failure of the
-second DELETE would restore one more item than expected.
+second DELETE would restore one more item than expected. The `reorder` callback (line 79) captures
+`snapshot = entries` for the same purpose and has the same hazard.
 
-In practice a shopping list is small, but the pattern is fragile and inconsistent — the `reorder`
-callback (line 79) captures `snapshot = entries` for the same purpose and has the same hazard.
-
-**Fix:** Capture the snapshot inside a `setEntries` functional updater, or use a `useRef` to
-track the current list:
+**Fix:** Capture the snapshot inside a `setEntries` functional updater:
 
 ```js
 const removeEntry = useCallback(async (entry_id) => {
@@ -109,21 +96,20 @@ const removeEntry = useCallback(async (entry_id) => {
 
 ---
 
-### WR-02: `onAddToStock` calls `itemsApi.updateQuantity` then `checkOff` independently — double-write risk
+### WR-02: `onAddToStock` double-writes quantity when item has a persisted shopping-list entry
 
-**File:** `frontend/src/pages/ShoppingList.jsx:123-141`
+**File:** `frontend/src/pages/ShoppingList.jsx:145-163`
 
 **Issue:** `onAddToStock` first calls `itemsApi.updateQuantity(matched.id, delta)` (which PATCHes
-the item quantity directly), and then, if the entry exists on the shopping list, calls
-`checkOff(entry.id, delta)` (which also increments `item.quantity` on the backend via the
-`POST /check-off` endpoint). When both calls succeed for an item that is on the shopping list,
-the quantity is incremented **twice** — once by `updateQuantity` and once by the check-off
+the item quantity directly), and then, if the entry exists on the shopping list with `entry.id != null`,
+calls `checkOff(entry.id, delta)` (which also increments `item.quantity` on the backend via the
+`POST /check-off` endpoint). When both calls succeed for an item that has a persisted shopping-list
+row, the quantity is incremented **twice** — once by `updateQuantity` and once by the check-off
 endpoint's restock logic.
 
-**Fix:** Remove the separate `updateQuantity` call. The check-off endpoint already handles the
-quantity increment atomically and records the transaction. For items that are NOT on the shopping
-list (no matching entry), a direct `updateQuantity` call may still be appropriate, but the current
-code always fires both:
+**Fix:** Remove the separate `updateQuantity` call. The check-off endpoint handles the quantity
+increment atomically and records the transaction. Only call `updateQuantity` when no shopping-list
+entry exists:
 
 ```js
 const onAddToStock = async (delta) => {
@@ -136,8 +122,11 @@ const onAddToStock = async (delta) => {
     if (entry && entry.id != null) {
       // check-off handles quantity increment + list removal atomically
       await checkOff(entry.id, delta)
+    } else if (entry && entry.id == null) {
+      // auto-entry: use item-keyed restock endpoint
+      await checkOff(null, delta, entry.item_id)
     } else {
-      // item not on the shopping list — update quantity directly
+      // not on the shopping list — update quantity directly
       await itemsApi.updateQuantity(matched.id, delta)
     }
     setRestockSaving(false)
@@ -152,51 +141,23 @@ const onAddToStock = async (delta) => {
 
 ---
 
-### WR-03: Auto-entries rendered in their own `<ul>` outside `<DndContext>` cannot trigger `onRemove`
+### WR-03: ~~Auto-entries rendered with no-op `onRemove`~~ — RESOLVED in Plan 04-06
 
-**File:** `frontend/src/pages/ShoppingList.jsx:191-204`
-
-**Issue:** Auto-entries (where `entry.id == null`) are rendered with `onRemove={() => {}}` (a
-no-op). The remove button in `ShoppingListRow` will still render and be focusable/clickable but
-do nothing — there is no visual indication it is inactive, no `disabled` attribute, and no toast
-or feedback. A user clicking the trash icon on an auto-entry receives no response at all.
-
-**Fix:** Either disable the remove button for auto-entries or hide it. The `ShoppingListRow`
-already accepts a `draggable` prop to suppress drag handles — a similar `removable` prop (or
-using `draggable={false}` as a signal) would make the intent explicit:
-
-```jsx
-// In ShoppingListRow.jsx — conditionally render the remove button
-{removable !== false && (
-  <button type="button" className={styles.remove} ... />
-)}
-```
-
-Or, in the short term, pass `onRemove={null}` and guard `onClick` inside the row:
-```jsx
-onClick={onRemove ? () => onRemove(entry) : undefined}
-disabled={!onRemove}
-```
+**Status:** Resolved. Auto-entries now pass `handleRemoveAuto` as `onRemove`
+(`frontend/src/pages/ShoppingList.jsx:219`). No action needed.
 
 ---
 
-### WR-04: `check_off_shopping_list_entry` — `db.refresh(item)` after `db.delete(entry)` can raise an error if the session is expired
+### WR-04: Redundant `db.refresh(item)` after commit in `check_off_shopping_list_entry`
 
 **File:** `backend/routers/shopping_list.py:271-272`
 
-**Issue:** When `should_remove` is `True`, `db.delete(entry)` is called before `db.commit()`. The
-subsequent `db.commit()` flushes the delete. Then `db.refresh(item)` is called. This is safe in
-SQLAlchemy because `item` is a different ORM object from `entry`. However, if at any point
-between the delete and the refresh the `entry` object's attributes are accessed (e.g., by a
-future logger or middleware), SQLAlchemy may raise a `DetachedInstanceError`. The current code
-does not access `entry` after the delete, so this is safe today but fragile to future edits.
+**Issue:** After `db.commit()`, `db.refresh(item)` is called but the refreshed values are not used
+in the returned dict — `new_quantity` is the locally-computed value. The refresh is therefore
+redundant. Additionally, accessing `entry` attributes after `db.delete(entry)` (before commit) can
+raise `DetachedInstanceError` in future edits; the current code avoids this, but it is fragile.
 
-Additionally, `db.refresh(item)` is called but the refreshed `item` is not used in the returned
-dict — the returned `new_quantity` is the locally-computed value, not the DB-re-read value. The
-refresh is therefore redundant.
-
-**Fix:** Remove the unnecessary `db.refresh(item)` call after the commit, or explicitly set
-`entry = None` after `db.delete(entry)` as a safeguard:
+**Fix:** Remove the unnecessary `db.refresh(item)` call and null out `entry` after deletion:
 
 ```python
     if should_remove:
@@ -204,7 +165,7 @@ refresh is therefore redundant.
         entry = None  # prevent accidental post-delete access
 
     db.commit()
-    # db.refresh(item) is not needed — new_quantity is already computed locally
+    # db.refresh(item) removed — new_quantity is computed locally
 
     return {
         "ok": True,
@@ -216,30 +177,20 @@ refresh is therefore redundant.
 
 ---
 
-### WR-05: `formatShoppingList` test expects `'Einkaufsliste\n'` for empty list but implementation produces `'Einkaufsliste\n'` — fragile test assertion
+### WR-05: `formatShoppingList` test asserts current behaviour that diverges from spec for empty list
 
 **File:** `frontend/src/lib/share.test.js:6-8`
 
-**Issue:** The test on line 7 asserts:
-```js
-expect(formatShoppingList([])).toBe('Einkaufsliste\n')
-```
-The implementation does `['Einkaufsliste', ''].join('\n')`, which produces `'Einkaufsliste\n'`
-(the empty string after the separator). This is currently correct. However the intent documented
-in the JSDoc says "Header 'Einkaufsliste', blank line, then one bullet per entry." For an empty
-list there should be no blank line — but there is one (the trailing `''` element always adds a
-`\n`). The test asserts the current (slightly inconsistent) behaviour rather than the specified
-behaviour.
+**Issue:** The test asserts `formatShoppingList([])` returns `'Einkaufsliste\n'` (trailing newline).
+The implementation produces this via `['Einkaufsliste', ''].join('\n')`. The trailing blank line is
+inconsistent with the stated spec ("blank line, then one bullet per entry"). The test validates
+the current bug rather than the specified behaviour; if the implementation is corrected, this test
+fails confusingly.
 
-This is a test-accuracy issue: the test is green but it validates the bug rather than the spec.
-If the implementation is ever corrected to omit the trailing blank line on empty input, the test
-will fail in a confusing way.
-
-**Fix:** Either remove the trailing empty string from `lines` for zero-entry lists, or update the
-test comment to acknowledge the trailing newline is intentional:
+**Fix:**
 
 ```js
-// share.js — option A: conditionally add blank separator
+// share.js — conditionally add blank separator only when entries exist
 export function formatShoppingList(entries) {
   if (entries.length === 0) return 'Einkaufsliste'
   const lines = ['Einkaufsliste', '']
@@ -253,6 +204,48 @@ export function formatShoppingList(entries) {
 
 ---
 
+### WR-06 (NEW — Plan 04-05): `onAddToStock` does not invoke `checkOff` for auto-entries — list stays stale after scan-restock
+
+**File:** `frontend/src/pages/ShoppingList.jsx:152-155`
+
+**Issue:** The restock scan handler (`onAddToStock`) checks `entry.id != null` before calling
+`checkOff`. If the scanned item has an auto-entry (id=null), the condition is false: `updateQuantity`
+fires but `checkOff` is skipped. Because `checkOff` is the only caller of `refetch()` in this path,
+the shopping list is never refreshed and the auto-entry remains visible to the user even after the
+item has been physically restocked. The server-side threshold check will eventually remove it on
+the next full page load, but the immediate UI state is incorrect.
+
+This combines with WR-02: a single fix handles both issues by replacing `updateQuantity +
+conditional checkOff` with a unified `checkOff`-first approach (see fix in WR-02 above). The
+auto-entry branch uses `checkOff(null, delta, entry.item_id)` which routes to the new
+`/items/{item_id}/restock` endpoint added in Plan 04-05.
+
+**Fix:** Apply the WR-02 fix, which includes the auto-entry branch. No separate fix needed.
+
+---
+
+### WR-07 (NEW — Plan 04-05): `restock_by_item` contains redundant `db.refresh(item)` — same as WR-04
+
+**File:** `backend/routers/shopping_list.py:328`
+
+**Issue:** `restock_by_item` calls `db.refresh(item)` after commit (line 328). As in `check_off_shopping_list_entry` (WR-04), the refreshed item is not used in the returned dict — `new_quantity` is already computed locally. The refresh is a no-op that adds an unnecessary SELECT round-trip.
+
+**Fix:**
+
+```python
+    db.commit()
+    # db.refresh(item) is redundant — new_quantity is computed locally above
+    no_longer_auto = not _item_is_below_threshold(item)
+    return {
+        "ok": True,
+        "removed": bool(removed_entry or no_longer_auto),
+        "item_id": item.id,
+        "new_quantity": new_quantity,
+    }
+```
+
+---
+
 ## Info
 
 ### IN-01: `ShoppingListRow` uses `role="checkbox"` on a `<button>` element — redundant ARIA
@@ -260,15 +253,10 @@ export function formatShoppingList(entries) {
 **File:** `frontend/src/components/ShoppingListRow/ShoppingListRow.jsx:42-48`
 
 **Issue:** The checkbox button has `role="checkbox"` but is a `<button>` element. Adding
-`role="checkbox"` to a `<button>` overrides the implicit button role and requires `aria-checked`
-state management. `aria-checked` is hardcoded to `false` — it never becomes `true` even when
-the item is in the check-off flow. Screen readers will announce a checkbox that never gets
-checked.
+`role="checkbox"` overrides the implicit button role and requires `aria-checked` state management.
+`aria-checked` is hardcoded to `false` — screen readers announce a checkbox that never gets checked.
 
-**Fix:** Use a `<button>` with no overriding role (the visual checkbox is CSS `::before`), or
-switch to `role="checkbox"` with `aria-checked` driven by the local checked state. Since
-check-off opens a sheet rather than toggling in-place, the button role is semantically more
-appropriate:
+**Fix:** Use a `<button>` without overriding role (the visual checkbox is CSS `::before`):
 
 ```jsx
 <button
@@ -281,24 +269,21 @@ appropriate:
 
 ---
 
-### IN-02: `useShoppingList` — `checkOff` does not distinguish check-off errors from network errors for the caller
+### IN-02: `checkOff` errors are silently swallowed in the `CheckOffSheet` confirm handler
 
-**File:** `frontend/src/hooks/useShoppingList.js:115-128`
+**File:** `frontend/src/pages/ShoppingList.jsx:246-249`
 
-**Issue:** `checkOff` catches all errors and returns `{ ok: false }`. The calling code in
-`ShoppingList.jsx` (line 224) does not inspect the return value at all — any error is silently
-swallowed (no toast, no error state update visible to the user). The `setError(e.message)` call
-inside the hook updates `error` state, but the shopping list page never reads `error` in the
-check-off path.
+**Issue:** `checkOff` returns `{ ok: false }` on error and sets `error` state in the hook, but the
+confirm handler does not inspect the return value — any check-off failure produces no toast or
+user-visible feedback.
 
-**Fix:** Either surface the error in the `CheckOffSheet` confirm handler, or ensure the page
-checks `checkOff`'s return value:
+**Fix:**
 
 ```jsx
 onConfirm={async (q) => {
-  const res = await checkOff(checkingOff.id, q)
+  const res = await checkOff(checkingOff.id, q, checkingOff.item_id)
   if (!res.ok) {
-    // show error toast or keep sheet open
+    // show error toast or keep sheet open with error message
   }
   setCheckingOff(null)
 }}
@@ -306,20 +291,16 @@ onConfirm={async (q) => {
 
 ---
 
-### IN-03: `AppLayout` calls `useShoppingList()` independently from the `ShoppingList` page — two separate fetches on initial load
+### IN-03: `AppLayout` and `ShoppingList` page each instantiate `useShoppingList()` — two fetches on load
 
 **File:** `frontend/src/layout/AppLayout.jsx:19`
 
-**Issue:** `AppLayout` instantiates its own `useShoppingList()` to drive the nav badge count.
-The `ShoppingList` page also creates its own `useShoppingList()` instance. This results in two
-independent fetches to `GET /api/shopping-list/` on every page load. The code comment
-acknowledges this ("acceptable cost at household scale"), so this is documented intent, but it is
-worth noting as an architectural trade-off that will double the request load if the list grows or
-the polling interval is added later.
+**Issue:** Two independent instances of `useShoppingList()` result in two `GET /api/shopping-list/`
+fetches on every page load. The code comment acknowledges this as an "acceptable cost at household
+scale," but it is an architectural trade-off worth flagging.
 
 **Fix (optional):** Lift `useShoppingList` to `App.jsx` alongside `useItems` and pass the result
-down to both `AppLayout` (for the badge) and `ShoppingList` (for the full page). This is the
-same pattern already used for `useItems`.
+down as a prop.
 
 ---
 
@@ -327,10 +308,8 @@ same pattern already used for `useItems`.
 
 **File:** `backend/models/__init__.py:73-74`
 
-**Issue:** `default=datetime.utcnow` and `onupdate=datetime.utcnow` use the `datetime.utcnow`
-class method, which was deprecated in Python 3.12 with a recommendation to use
-`datetime.now(timezone.utc)`. This will generate deprecation warnings in Python 3.12+ and may
-become a hard error in a future version.
+**Issue:** `default=datetime.utcnow` and `onupdate=datetime.utcnow` use the deprecated class method.
+Python 3.12+ emits deprecation warnings; a future version may make it a hard error.
 
 **Fix:**
 
@@ -340,16 +319,53 @@ from datetime import datetime, timezone
 def _utcnow():
     return datetime.now(timezone.utc)
 
-# In Item:
 created_at = Column(DateTime, nullable=False, default=_utcnow)
 updated_at = Column(DateTime, nullable=False, default=_utcnow, onupdate=_utcnow)
-
-# In Transaction:
-timestamp = Column(DateTime, nullable=False, default=_utcnow)
 ```
 
 ---
 
-_Reviewed: 2026-04-18_
+### IN-05 (NEW — Plan 04-06): EmptyState not shown when all entries are suppressed auto-entries
+
+**File:** `frontend/src/pages/ShoppingList.jsx:190-196`
+
+**Issue:** The EmptyState guard at line 190 checks `entries.length === 0` against the raw hook
+array. If all entries are auto-entries and the user dismisses them all via `handleRemoveAuto`,
+`entries.length` remains > 0 (the hook still reports them), but neither `persistedEntries` nor
+`autoEntries` produce any rows. The rendered body is empty, but the "Nothing to buy / All stocked
+up!" EmptyState is not shown.
+
+**Fix:** Change the guard to use the derived lists:
+
+```jsx
+const totalVisible = persistedEntries.length + autoEntries.length
+
+{!loading && totalVisible === 0 && !error && (
+  <EmptyState
+    icon={<ShoppingCart size={48} />}
+    heading="Nothing to buy"
+    body="All stocked up! Items will appear here when stock runs low."
+  />
+)}
+```
+
+---
+
+### IN-06 (NEW — Plan 04-05): No test covers the auto-entry (id=null) path in `onAddToStock` scan-restock
+
+**File:** `frontend/src/pages/ShoppingList.test.jsx:155-192`
+
+**Issue:** Test 7 sets up a persisted entry (`id: 7`) and asserts that `checkOff` is called with
+`(7, 1)`. The case where the scanned item has only an auto-entry (`id=null`) is not tested. In
+the current implementation this path silently skips `checkOff`, leaving the UI stale (WR-06). A
+dedicated test would have caught this gap.
+
+**Fix:** Add a test variant where `entries` contains an auto-entry (id=null) for the scanned item,
+and assert that `checkOff` is called with `(null, 1, item_id)` after `Add to stock` is tapped
+(pending the WR-02/WR-06 fix).
+
+---
+
+_Reviewed: 2026-04-19_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
