@@ -222,7 +222,7 @@ export default function ShoppingList({ itemsApi }) {
         <CheckOffSheet
           entry={checkingOff}
           onConfirm={async (q) => {
-            await checkOff(checkingOff.id, q)
+            await checkOff(checkingOff.id, q, checkingOff.item_id)
             setCheckingOff(null)
           }}
           onDismiss={() => setCheckingOff(null)}

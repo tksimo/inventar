@@ -248,4 +248,25 @@ describe('ShoppingList page', () => {
     expect(screen.queryByRole('dialog', { name: 'Restock scanner' })).toBeNull()
     expect(screen.getByRole('button', { name: /start restocking/i })).toBeTruthy()
   })
+
+  it('Test G: CheckOffSheet onConfirm on an auto entry passes item_id to checkOff (Gap 1)', async () => {
+    const user = userEvent.setup()
+    const checkOff = vi.fn(() => Promise.resolve({ ok: true }))
+    const autoEntry = {
+      id: null,
+      item_id: 7,
+      item_name: 'Milk',
+      quantity_mode: 'exact', quantity: 0, status: null,
+      reorder_threshold: 3, added_manually: false, sort_order: null,
+      auto: true, location_id: null,
+    }
+    mockHook.checkOff = checkOff
+    renderPage({ entries: [autoEntry] })
+
+    await user.click(screen.getByRole('checkbox', { name: /milk/i }))
+    await user.click(screen.getByRole('button', { name: /add to stock/i }))
+
+    await waitFor(() => expect(checkOff).toHaveBeenCalled())
+    expect(checkOff).toHaveBeenCalledWith(null, 1, 7)
+  })
 })

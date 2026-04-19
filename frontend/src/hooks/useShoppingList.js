@@ -112,9 +112,21 @@ export function useShoppingList() {
     }
   }, [entries])
 
-  const checkOff = useCallback(async (entry_id, quantity_added) => {
+  const checkOff = useCallback(async (entry_id, quantity_added, item_id = null) => {
+    const hasEntryId = entry_id != null && Number.isFinite(Number(entry_id))
+    const hasItemId = item_id != null && Number.isFinite(Number(item_id))
+
+    if (!hasEntryId && !hasItemId) {
+      setError('cannot check off: missing entry_id and item_id')
+      return { ok: false }
+    }
+
+    const path = hasEntryId
+      ? `api/shopping-list/${entry_id}/check-off`
+      : `api/shopping-list/items/${item_id}/restock`
+
     try {
-      await json(`api/shopping-list/${entry_id}/check-off`, {
+      await json(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity_added }),
