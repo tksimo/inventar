@@ -70,11 +70,13 @@
   4. User sees an in-app alert when an item drops below its reorder threshold
   5. User can export the shopping list as plain text and share it via a messaging app
   6. In restock mode, scanning a barcode finds the matching item and prompts for quantity to add; restocked items disappear from the shopping list
-**Plans**: 4 plans
-  - [ ] 04-01-PLAN.md — Backend migration + GET shopping list (SHOP-01 auto-surfacing)
-  - [ ] 04-02-PLAN.md — Backend write endpoints: POST/DELETE/PATCH/check-off (SHOP-02, SHOP-03, RSTO-03)
-  - [ ] 04-03-PLAN.md — Frontend shopping list page: DnD, share, check-off, nav badge (SHOP-01/02/03/04/05)
-  - [ ] 04-04-PLAN.md — Frontend restock scan flow: camera loop + RestockQuickSheet + no-match toast (RSTO-01/02/03)
+**Plans**: 6 plans
+  - [x] 04-01-PLAN.md — Backend migration + GET shopping list (SHOP-01 auto-surfacing)
+  - [x] 04-02-PLAN.md — Backend write endpoints: POST/DELETE/PATCH/check-off (SHOP-02, SHOP-03, RSTO-03)
+  - [x] 04-03-PLAN.md — Frontend shopping list page: DnD, share, check-off, nav badge (SHOP-01/02/03/04/05)
+  - [x] 04-04-PLAN.md — Frontend restock scan flow: camera loop + RestockQuickSheet + no-match toast (RSTO-01/02/03)
+  - [x] 04-05-PLAN.md — Gap closure: auto-entry check-off via POST /api/shopping-list/items/{id}/restock (UAT Gap 1, SHOP-03)
+  - [x] 04-06-PLAN.md — Gap closure: dismiss auto-populated items via session-scoped suppression (UAT Gap 2, SHOP-02)
 **UI hint**: yes
 
 ### Phase 5: Recipes
