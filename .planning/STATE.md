@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-04-19T15:10:25.730Z"
+stopped_at: Phase 5 context gathered
+last_updated: "2026-04-19T18:43:48.248Z"
 progress:
   total_phases: 6
   completed_phases: 4
@@ -130,9 +130,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-17T23:06:03.315Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-shopping-restock/04-UI-SPEC.md
+Last session: 2026-04-19T18:43:48.236Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-recipes/05-CONTEXT.md
 
 To resume: `/clear` then `/gsd-execute-phase 1`
 
