@@ -182,7 +182,7 @@ Primary visual anchor: the recipe cards — a vertically scrollable list occupyi
   - Ingredients section:
     - Section label: "Ingredients" (label style), text-transform uppercase, letter-spacing 0.05em
     - List of RecipeIngredientRow items (gap var(--space-sm))
-    - "Add ingredient" button: text button, full-width, --font-size-body, --color-accent, 44px height, dashed border 1px --color-border, border-radius 6px — inviting tap target
+    - "Add ingredient" button: text button, full-width, --font-size-body, --color-accent, 44px height, dashed border 1px --color-border, border-radius 8px — inviting tap target
   - URL import section (when opened via Import flow): read-only URL field showing the imported source
 - Footer: 64px height, border-top 1px solid --color-border, padding var(--space-md), flex row gap var(--space-sm)
   - "Save recipe": flex:1, height 40px, --color-accent bg, --font-weight-semibold — primary action; disabled until name is non-empty
@@ -196,7 +196,7 @@ Primary visual anchor: the recipe cards — a vertically scrollable list occupyi
 - Unit input: width 80px, height 40px, type="text", placeholder "g / ml / pcs" — free text
 - Remove button: Trash2 icon, size 16, --color-destructive, 44×44px touch area
 - Below name input (when auto-suggest match found):
-  - Match pill: `display: inline-flex; align-items: center; gap: var(--space-xs); padding: 2px var(--space-sm); background: --color-accent; border-radius: 12px; cursor: pointer`
+  - Match pill: `display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: --color-accent; border-radius: 12px; cursor: pointer`
   - Pill text: --font-size-label (12px), --font-weight-semibold, --color-text-primary; truncated to 20 chars with ellipsis
   - Pill shows: "Link: [item name]" — tap accepts; X button on pill removes link
   - If no match or match declined: pill not shown; ingredient saved as unlinked
