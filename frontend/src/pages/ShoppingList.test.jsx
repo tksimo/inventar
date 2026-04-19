@@ -249,6 +249,69 @@ describe('ShoppingList page', () => {
     expect(screen.getByRole('button', { name: /start restocking/i })).toBeTruthy()
   })
 
+  // -------------------------------------------------------------------------
+  // Plan 06 (gap closure): auto-entry dismiss with session-scoped suppression.
+  // Closes UAT Test 7 Gap 2.
+  // -------------------------------------------------------------------------
+
+  const autoMilk = {
+    id: null,
+    item_id: 42,
+    item_name: 'Milk',
+    quantity_mode: 'exact', quantity: 0, status: null,
+    reorder_threshold: 3, added_manually: false, sort_order: null,
+    auto: true, location_id: null,
+  }
+
+  it('Test H: auto entry can be dismissed via remove button', async () => {
+    const user = userEvent.setup()
+    renderPage({ entries: [autoMilk] })
+    expect(screen.getByText('Milk')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Remove Milk from shopping list'))
+
+    expect(screen.queryByText('Milk')).not.toBeInTheDocument()
+  })
+
+  it('Test I: dismissing an auto entry shows undo toast', async () => {
+    const user = userEvent.setup()
+    renderPage({ entries: [autoMilk] })
+
+    await user.click(screen.getByLabelText('Remove Milk from shopping list'))
+
+    expect(screen.getByText('Removed from list.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Undo remove Milk')).toBeInTheDocument()
+  })
+
+  it('Test J: undo restores a dismissed auto entry (no addManual call)', async () => {
+    const user = userEvent.setup()
+    const addManual = vi.fn(() => Promise.resolve({ ok: true }))
+    mockHook.addManual = addManual
+    renderPage({ entries: [autoMilk] })
+
+    await user.click(screen.getByLabelText('Remove Milk from shopping list'))
+    expect(screen.queryByText('Milk')).not.toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Undo remove Milk'))
+
+    expect(screen.getByText('Milk')).toBeInTheDocument()
+    expect(addManual).not.toHaveBeenCalled()
+  })
+
+  it('Test K: dismissing an auto entry does NOT trigger a backend call', async () => {
+    const user = userEvent.setup()
+    const removeEntry = vi.fn(() => Promise.resolve({ ok: true }))
+    const addManual = vi.fn(() => Promise.resolve({ ok: true }))
+    mockHook.removeEntry = removeEntry
+    mockHook.addManual = addManual
+    renderPage({ entries: [autoMilk] })
+
+    await user.click(screen.getByLabelText('Remove Milk from shopping list'))
+
+    expect(removeEntry).not.toHaveBeenCalled()
+    expect(addManual).not.toHaveBeenCalled()
+  })
+
   it('Test G: CheckOffSheet onConfirm on an auto entry passes item_id to checkOff (Gap 1)', async () => {
     const user = userEvent.setup()
     const checkOff = vi.fn(() => Promise.resolve({ ok: true }))

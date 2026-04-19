@@ -34,6 +34,7 @@ export default function ShoppingList({ itemsApi }) {
   const [pickerSearch, setPickerSearch] = useState('')
   const [undoEntry, setUndoEntry] = useState(null)
   const [copiedToastVisible, setCopiedToastVisible] = useState(false)
+  const [suppressedItemIds, setSuppressedItemIds] = useState(() => new Set())
 
   // Restock mode state
   const [restockMode, setRestockMode] = useState(false)
@@ -52,7 +53,10 @@ export default function ShoppingList({ itemsApi }) {
 
   // Persisted rows are sortable; auto rows (id==null) render after as a fixed tail.
   const persistedEntries = useMemo(() => entries.filter((e) => e.id != null), [entries])
-  const autoEntries = useMemo(() => entries.filter((e) => e.id == null), [entries])
+  const autoEntries = useMemo(
+    () => entries.filter((e) => e.id == null && !suppressedItemIds.has(e.item_id)),
+    [entries, suppressedItemIds],
+  )
   const sortableIds = persistedEntries.map((e) => String(e.id))
 
   // Undo toast auto-dismiss
@@ -94,8 +98,26 @@ export default function ShoppingList({ itemsApi }) {
     if (res.ok) setUndoEntry(entry)
   }
 
+  const handleRemoveAuto = (entry) => {
+    setSuppressedItemIds((prev) => {
+      const next = new Set(prev)
+      next.add(entry.item_id)
+      return next
+    })
+    setUndoEntry(entry)
+  }
+
   const handleUndo = async () => {
     if (!undoEntry) return
+    if (undoEntry.id == null) {
+      setSuppressedItemIds((prev) => {
+        const next = new Set(prev)
+        next.delete(undoEntry.item_id)
+        return next
+      })
+      setUndoEntry(null)
+      return
+    }
     await addManual(undoEntry.item_id)
     setUndoEntry(null)
   }
@@ -195,7 +217,7 @@ export default function ShoppingList({ itemsApi }) {
                     key={`auto-${e.item_id}`}
                     entry={e}
                     onCheck={setCheckingOff}
-                    onRemove={() => {}}
+                    onRemove={handleRemoveAuto}
                     draggable={false}
                   />
                 ))}
