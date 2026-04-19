@@ -366,3 +366,133 @@ def test_check_off_records_transaction_attribution(client, db_session):
     ).order_by(Transaction.id.desc()).first()
     assert txn is not None
     assert txn.ha_user_name == "Alice"
+
+
+# ---------------------------------------------------------------------------
+# Plan 05 (gap closure): POST /api/shopping-list/items/{item_id}/restock
+# Fixes UAT Test 6 Gap 1 — auto entries (id=None) could not be checked off.
+# ---------------------------------------------------------------------------
+
+
+def test_restock_by_item_auto_entry_happy_path(client, db_session):
+    item = _make_item(db_session, name="Milk", threshold=0, quantity=0)
+    body_before = client.get("/api/shopping-list/").json()
+    assert len(body_before) == 1
+    assert body_before[0]["auto"] is True
+    assert body_before[0]["id"] is None
+    assert body_before[0]["item_id"] == item.id
+
+    r = client.post(
+        f"/api/shopping-list/items/{item.id}/restock",
+        json={"quantity_added": 1},
+    )
+    assert r.status_code == 200, r.text
+    payload = r.json()
+    assert payload["ok"] is True
+    assert payload["removed"] is True
+    assert payload["item_id"] == item.id
+    assert payload["new_quantity"] == 1
+
+    db_session.expire_all()
+    refreshed = db_session.query(Item).filter(Item.id == item.id).one()
+    assert refreshed.quantity == 1
+
+    txn = db_session.query(Transaction).filter(
+        Transaction.item_id == item.id,
+        Transaction.action == "quantity_change",
+    ).order_by(Transaction.id.desc()).first()
+    assert txn is not None
+    assert txn.delta == 1
+
+    assert client.get("/api/shopping-list/").json() == []
+
+
+def test_restock_by_item_status_out_flips_to_exact(client, db_session):
+    item = _make_item(
+        db_session, name="Oil",
+        quantity_mode=QuantityMode.STATUS,
+        status=StockStatus.OUT,
+        quantity=None, threshold=None,
+    )
+    r = client.post(
+        f"/api/shopping-list/items/{item.id}/restock",
+        json={"quantity_added": 3},
+    )
+    assert r.status_code == 200
+
+    db_session.expire_all()
+    refreshed = db_session.query(Item).filter(Item.id == item.id).one()
+    assert refreshed.quantity_mode == QuantityMode.EXACT
+    assert refreshed.quantity == 3
+    assert refreshed.status is None
+
+    assert client.get("/api/shopping-list/").json() == []
+
+
+def test_restock_by_item_kept_on_list_when_persisted_and_below_threshold(client, db_session):
+    item = _make_item(db_session, name="Bread", threshold=5, quantity=1)
+    entry_id = client.post(
+        "/api/shopping-list/", json={"item_id": item.id}
+    ).json()["id"]
+
+    r = client.post(
+        f"/api/shopping-list/items/{item.id}/restock",
+        json={"quantity_added": 1},
+    )
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload["removed"] is False
+
+    db_session.expire_all()
+    assert db_session.query(Item).filter(Item.id == item.id).one().quantity == 2
+
+    body = client.get("/api/shopping-list/").json()
+    matching = [row for row in body if row.get("id") == entry_id]
+    assert len(matching) == 1
+    assert matching[0]["quantity"] == 2
+
+
+def test_restock_by_item_deletes_persisted_entry_when_above_threshold(client, db_session):
+    item = _make_item(db_session, name="Eggs", threshold=3, quantity=1)
+    entry_id = client.post(
+        "/api/shopping-list/", json={"item_id": item.id}
+    ).json()["id"]
+
+    r = client.post(
+        f"/api/shopping-list/items/{item.id}/restock",
+        json={"quantity_added": 5},
+    )
+    assert r.status_code == 200
+    assert r.json()["removed"] is True
+
+    db_session.expire_all()
+    assert db_session.query(Item).filter(Item.id == item.id).one().quantity == 6
+
+    body = client.get("/api/shopping-list/").json()
+    assert all(row.get("id") != entry_id for row in body)
+    assert all(row["item_id"] != item.id for row in body)
+
+
+def test_restock_by_item_unknown_returns_404(client, db_session):
+    r = client.post(
+        "/api/shopping-list/items/99999/restock",
+        json={"quantity_added": 1},
+    )
+    assert r.status_code == 404
+
+
+def test_restock_by_item_archived_returns_404(client, db_session):
+    item = _make_item(db_session, name="Legacy", threshold=3, quantity=0, archived=True)
+    r = client.post(
+        f"/api/shopping-list/items/{item.id}/restock",
+        json={"quantity_added": 1},
+    )
+    assert r.status_code == 404
+
+
+def test_restock_by_item_quantity_added_bounds(client, db_session):
+    item = _make_item(db_session, name="Test", threshold=0, quantity=0)
+    url = f"/api/shopping-list/items/{item.id}/restock"
+    assert client.post(url, json={"quantity_added": 0}).status_code == 422
+    assert client.post(url, json={"quantity_added": -1}).status_code == 422
+    assert client.post(url, json={"quantity_added": 20000}).status_code == 422

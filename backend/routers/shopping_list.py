@@ -277,3 +277,60 @@ def check_off_shopping_list_entry(
         "item_id": item.id,
         "new_quantity": new_quantity,
     }
+
+
+@router.post("/items/{item_id}/restock")
+def restock_by_item(
+    item_id: int,
+    body: CheckOffBody,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Restock an item directly — Gap 1 fix for auto entries (UAT Test 6).
+
+    Mirrors /{entry_id}/check-off semantics but keyed by item_id. Required
+    because auto entries have id=None and cannot target the entry-keyed endpoint.
+    """
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if item is None or item.archived:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    quantity_added = body.quantity_added
+
+    if item.quantity_mode == QuantityMode.STATUS:
+        item.quantity_mode = QuantityMode.EXACT
+        item.status = None
+        new_quantity = quantity_added
+    else:
+        new_quantity = (item.quantity or 0) + quantity_added
+
+    item.quantity = new_quantity
+
+    _record_txn(
+        db, item.id, action="quantity_change",
+        user=request.state.user, delta=float(quantity_added),
+    )
+
+    threshold = item.reorder_threshold
+    should_remove = (threshold is None) or (new_quantity >= threshold)
+
+    entry = (
+        db.query(ShoppingListEntry)
+        .filter(ShoppingListEntry.item_id == item_id)
+        .first()
+    )
+    removed_entry = False
+    if entry is not None and should_remove:
+        db.delete(entry)
+        removed_entry = True
+
+    db.commit()
+    db.refresh(item)
+
+    no_longer_auto = not _item_is_below_threshold(item)
+    return {
+        "ok": True,
+        "removed": bool(removed_entry or no_longer_auto),
+        "item_id": item.id,
+        "new_quantity": new_quantity,
+    }
