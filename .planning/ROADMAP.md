@@ -89,7 +89,12 @@
   3. User can open a recipe and see which ingredients are missing or running low based on current inventory
   4. User can add all missing recipe ingredients to the shopping list with one tap
   5. User can mark a recipe as cooked and all ingredient quantities are automatically deducted from inventory
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 05-01-PLAN.md — Migration 0005 + ORM + Pydantic schemas + Wave 0 RED tests (RECP-01-05 foundation)
+  - [ ] 05-02-PLAN.md — Backend CRUD + URL import (RECP-01, RECP-02)
+  - [ ] 05-03-PLAN.md — Backend check-ingredients + add-missing + cook (RECP-03, RECP-04, RECP-05)
+  - [ ] 05-04-PLAN.md — Frontend useRecipes hook + Recipes page + RecipeForm + RecipeDetail + nav (RECP-01, RECP-02)
+  - [ ] 05-05-PLAN.md — Frontend RecipeCheckSheet + CookConfirmSheet + check/cook wiring (RECP-03, RECP-04, RECP-05)
 **UI hint**: yes
 
 ### Phase 6: HA Display Integration
@@ -111,7 +116,7 @@
 | 2. Core Inventory | 8/9 | In Progress|  |
 | 3. Barcode Scanning | 0/? | Not started | - |
 | 4. Shopping & Restock | 0/4 | Not started | - |
-| 5. Recipes | 0/? | Not started | - |
+| 5. Recipes | 0/5 | Not started | - |
 | 6. HA Display Integration | 0/? | Not started | - |
 
 ---
