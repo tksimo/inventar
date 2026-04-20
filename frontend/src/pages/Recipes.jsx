@@ -4,6 +4,8 @@ import { useRecipes } from '../hooks/useRecipes.js'
 import RecipeCard from '../components/RecipeCard/RecipeCard.jsx'
 import RecipeForm from '../components/RecipeForm/RecipeForm.jsx'
 import RecipeDetail from '../components/RecipeDetail/RecipeDetail.jsx'
+import RecipeCheckSheet from '../components/RecipeCheckSheet/RecipeCheckSheet.jsx'
+import CookConfirmSheet from '../components/CookConfirmSheet/CookConfirmSheet.jsx'
 import EmptyState from '../components/EmptyState/EmptyState.jsx'
 import Toast from '../components/Toast/Toast.jsx'
 import FAB from '../components/FAB/FAB.jsx'
@@ -26,6 +28,18 @@ export default function Recipes() {
   const [importValue, setImportValue] = useState('')
   const [importing, setImporting] = useState(false)
   const [toast, setToast] = useState(null)
+
+  // Plan 05 — Check flow state
+  const [checkOpen, setCheckOpen] = useState(false)
+  const [checkData, setCheckData] = useState(null)
+  const [checkLoading, setCheckLoading] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState(null)
+
+  // Plan 05 — Cook flow state
+  const [cookOpen, setCookOpen] = useState(false)
+  const [cookSaving, setCookSaving] = useState(false)
+  const [cookSaveError, setCookSaveError] = useState(null)
 
   const handleOpenCard = async (recipeListItem) => {
     const res = await getDetail(recipeListItem.id)
@@ -92,6 +106,75 @@ export default function Recipes() {
     return res
   }
 
+  const handleOpenCheck = async () => {
+    if (!selected) return
+    setAddError(null)
+    setCheckOpen(true)
+    setCheckLoading(true)
+    setCheckData(null)
+    const res = await api.checkIngredients(selected.id)
+    setCheckLoading(false)
+    if (res.ok) setCheckData(res.check)
+  }
+
+  const handleCloseCheck = () => {
+    setCheckOpen(false)
+    setCheckData(null)
+    setAddError(null)
+    setAdding(false)
+  }
+
+  const handleAddMissing = async () => {
+    if (!selected) return
+    setAdding(true)
+    setAddError(null)
+    const res = await api.addMissing(selected.id)
+    setAdding(false)
+    if (res.ok) {
+      setToast('Missing ingredients added to shopping list.')
+    } else {
+      setAddError("Couldn't add. Try again.")
+    }
+  }
+
+  const handleOpenCook = async () => {
+    if (!selected) return
+    setCookSaveError(null)
+    setCookOpen(true)
+    // Fetch fresh check data if not already loaded for this recipe
+    if (!checkData || checkData.recipe_id !== selected.id) {
+      setCheckLoading(true)
+      const res = await api.checkIngredients(selected.id)
+      setCheckLoading(false)
+      if (res.ok) setCheckData(res.check)
+      else { setCookOpen(false); setToast("Couldn't load ingredients. Try again.") }
+    }
+  }
+
+  const handleCookConfirm = async (deductions) => {
+    if (!selected) return
+    setCookSaving(true)
+    setCookSaveError(null)
+    const res = await api.cook(selected.id, deductions)
+    setCookSaving(false)
+    if (res.ok) {
+      setToast(`${selected.name} cooked. Inventory updated.`)
+      setCookOpen(false)
+      if (!checkOpen) setCheckData(null)
+      // Refresh detail view so updated quantities render
+      const detail = await api.getDetail(selected.id)
+      if (detail.ok) setSelected(detail.recipe)
+    } else {
+      setCookSaveError("Couldn't save. Try again.")
+    }
+  }
+
+  const handleCloseCook = () => {
+    setCookOpen(false)
+    setCookSaveError(null)
+    if (!checkOpen) setCheckData(null)
+  }
+
   if (selected) {
     return (
       <>
@@ -99,8 +182,8 @@ export default function Recipes() {
           recipe={selected}
           onBack={() => setSelected(null)}
           onEdit={handleEditClick}
-          onCheck={() => { /* Plan 05 wires up RecipeCheckSheet */ }}
-          onCook={() => { /* Plan 05 wires up CookConfirmSheet */ }}
+          onCheck={handleOpenCheck}
+          onCook={handleOpenCook}
         />
         {formOpen && (
           <RecipeForm
@@ -113,6 +196,27 @@ export default function Recipes() {
         )}
         {toast && (
           <Toast message={toast} onDismiss={() => setToast(null)} />
+        )}
+        {checkOpen && (
+          <RecipeCheckSheet
+            recipeName={selected.name}
+            checkData={checkData}
+            loading={checkLoading}
+            adding={adding}
+            addError={addError}
+            onAddMissing={handleAddMissing}
+            onClose={handleCloseCheck}
+          />
+        )}
+        {cookOpen && checkData && (
+          <CookConfirmSheet
+            recipeName={selected.name}
+            checkData={checkData}
+            saving={cookSaving}
+            saveError={cookSaveError}
+            onConfirm={handleCookConfirm}
+            onClose={handleCloseCook}
+          />
         )}
       </>
     )
