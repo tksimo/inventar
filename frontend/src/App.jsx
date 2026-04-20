@@ -22,7 +22,7 @@ function AppInner() {
       <Routes>
         <Route path="/" element={<Inventory itemsApi={itemsApi} />} />
         <Route path="/shopping" element={<ShoppingList itemsApi={itemsApi} />} />
-        <Route path="/recipes" element={<Recipes />} />
+        <Route path="/recipes" element={<Recipes onInventoryMutated={itemsApi.refetch} />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
