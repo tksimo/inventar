@@ -17,17 +17,34 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from models import QuantityMode, StockStatus
 
 
 class ShoppingListCreate(BaseModel):
-    """POST /api/shopping-list/ — manual add an item to the list (SHOP-02)."""
+    """POST /api/shopping-list/ — manual add OR free-text add (SHOP-02, RECP-04 D-10).
+
+    Exactly one of (item_id, free_text) must be provided. Enforced by a
+    model_validator so the error is raised at schema parsing, before any
+    DB write occurs.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    item_id: int = Field(..., gt=0)
+    item_id: Optional[int] = Field(None, gt=0)
+    free_text: Optional[str] = Field(None, min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _exactly_one_of(self) -> "ShoppingListCreate":
+        has_item = self.item_id is not None
+        has_text = self.free_text is not None
+        if has_item == has_text:
+            # both set or neither set -> invalid
+            raise ValueError(
+                "ShoppingListCreate: exactly one of {item_id, free_text} must be set"
+            )
+        return self
 
 
 class ShoppingListUpdate(BaseModel):
@@ -53,20 +70,23 @@ class ShoppingListEntryResponse(BaseModel):
                  (id=None, added_manually=False, sort_order=None).
     auto=False -> a real ShoppingListEntry row (id set, sort_order possibly
                  set from drag-and-drop).
+    free_text  -> non-null when the row is an unlinked text entry (item_id=None)
+                 added via RECP-04 (D-10).
     """
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
     id: Optional[int] = None
-    item_id: int
-    item_name: str
+    item_id: Optional[int] = None
+    item_name: Optional[str] = None
     quantity: Optional[int] = None
-    quantity_mode: QuantityMode
+    quantity_mode: Optional[QuantityMode] = None
     status: Optional[StockStatus] = None
     reorder_threshold: Optional[int] = None
     location_id: Optional[int] = None
     added_manually: bool = False
     sort_order: Optional[int] = None
+    free_text: Optional[str] = None
     auto: bool
 
 
