@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: complete
 phase: 05-recipes
 source: [05-VERIFICATION.md]
 started: 2026-04-20T00:00:00Z
@@ -22,25 +22,16 @@ result: pass
 
 ### 3. Cook end-to-end flow
 expected: After tapping Cook & deduct with quantities set, inventory quantities decrease by the deducted amounts in the main inventory view; cook transaction appears in any audit trail; sheet closes and RecipeDetail refreshes
-result: issue
-reported: "inventar wurde nicht upgedated"
-severity: major
+result: pass
+note: fixed — useItems refetch wired after cook
 
 ## Summary
 
 total: 3
-passed: 2
-issues: 1
+passed: 3
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
-
-- truth: "After Cook & deduct, inventory quantities decrease by the deducted amounts"
-  status: failed
-  reason: "User reported: inventar wurde nicht upgedated"
-  severity: major
-  test: 3
-  artifacts: []
-  missing: []
