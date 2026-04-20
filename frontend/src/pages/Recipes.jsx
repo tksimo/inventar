@@ -16,7 +16,7 @@ import styles from './Recipes.module.css'
  * Covers: RECP-01 (CRUD), RECP-02 (URL import).
  * Plan 05 wires up check/cook sheets (RECP-03/04/05).
  */
-export default function Recipes() {
+export default function Recipes({ onInventoryMutated }) {
   const api = useRecipes()
   const { recipes, loading, error, create, update, remove, getDetail, importUrl } = api
 
@@ -161,6 +161,7 @@ export default function Recipes() {
       setToast(`${selected.name} cooked. Inventory updated.`)
       setCookOpen(false)
       if (!checkOpen) setCheckData(null)
+      onInventoryMutated?.()
       // Refresh detail view so updated quantities render
       const detail = await api.getDetail(selected.id)
       if (detail.ok) setSelected(detail.recipe)
