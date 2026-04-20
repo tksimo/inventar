@@ -32,16 +32,17 @@ describe('AppLayout', () => {
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument()
   })
 
-  it('renders exactly three nav links with correct labels', () => {
+  it('renders exactly four nav links with correct labels', () => {
     render(
       <MemoryRouter>
         <AppLayout><div /></AppLayout>
       </MemoryRouter>,
     )
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(nav.querySelectorAll('a')).toHaveLength(3)
+    expect(nav.querySelectorAll('a')).toHaveLength(4)
     expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /shopping list/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /recipes/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument()
   })
 

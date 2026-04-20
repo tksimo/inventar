@@ -1,0 +1,130 @@
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 59;
+}
+.drawer {
+  position: fixed;
+  top: 0; right: 0;
+  height: 100vh;
+  width: 100vw;
+  max-width: 480px;
+  background: var(--color-secondary);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+  transform: translateX(100%);
+  transition: transform 200ms ease-out;
+}
+.drawer.open { transform: translateX(0); }
+.header {
+  display: flex; align-items: center; gap: var(--space-sm);
+  height: 48px; padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+.title {
+  flex: 1 1 auto; margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+.close {
+  width: 44px; height: 44px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--color-text-secondary);
+  display: flex; align-items: center; justify-content: center;
+}
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex; flex-direction: column; gap: var(--space-md);
+}
+.field { display: flex; flex-direction: column; gap: var(--space-xs); }
+.label {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.input, .textarea {
+  background: var(--color-dominant);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body);
+  font-family: inherit;
+}
+.input { height: 40px; }
+.textarea { min-height: 88px; resize: vertical; }
+.sourceUrl {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  word-break: break-all;
+  padding: 8px 10px;
+  background: var(--color-dominant);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+.ingredientList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.ingredientRow {
+  display: flex; align-items: center; gap: var(--space-sm);
+  min-height: 44px;
+}
+.ingName { flex: 1 1 auto; height: 40px;
+  background: var(--color-dominant); border: 1px solid var(--color-border);
+  border-radius: 6px; padding: 0 10px; color: var(--color-text-primary);
+  font-size: var(--font-size-body); font-family: inherit; min-width: 0; }
+.ingQty, .ingUnit { width: 80px; height: 40px;
+  background: var(--color-dominant); border: 1px solid var(--color-border);
+  border-radius: 6px; padding: 0 10px; color: var(--color-text-primary);
+  font-size: var(--font-size-body); font-family: inherit; }
+.ingRemove {
+  width: 44px; height: 44px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--color-destructive);
+  display: flex; align-items: center; justify-content: center;
+}
+.addIngredient {
+  display: flex; align-items: center; justify-content: center; gap: var(--space-xs);
+  width: 100%; min-height: 44px;
+  background: transparent; color: var(--color-accent);
+  border: 1px dashed var(--color-border); border-radius: 8px;
+  font-size: var(--font-size-body); font-family: inherit;
+  cursor: pointer;
+}
+.saveError { color: var(--color-destructive); font-size: var(--font-size-label); margin: 0 var(--space-md); }
+.footer {
+  display: flex; align-items: center; gap: var(--space-sm);
+  height: 64px; padding: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+.save {
+  flex: 1 1 auto; height: 40px;
+  background: var(--color-accent); color: var(--color-text-primary);
+  border: none; border-radius: 8px;
+  font-weight: var(--font-weight-semibold); font-size: var(--font-size-body);
+  cursor: pointer; font-family: inherit;
+}
+.save:disabled { opacity: 0.5; cursor: not-allowed; }
+.delete {
+  width: auto; height: 40px; padding: 0 var(--space-md);
+  background: var(--color-secondary); color: var(--color-destructive);
+  border: 1px solid var(--color-border); border-radius: 8px;
+  font-family: inherit; font-size: var(--font-size-body);
+  cursor: pointer;
+}
+.confirmText { flex: 1 1 auto; color: var(--color-text-primary); font-size: var(--font-size-body); }
+.confirmYes {
+  background: var(--color-destructive); color: #fff;
+  border: none; border-radius: 8px; height: 40px; padding: 0 var(--space-md);
+  font-weight: var(--font-weight-semibold); cursor: pointer; font-family: inherit;
+}
+.confirmCancel {
+  background: transparent; color: var(--color-text-secondary);
+  border: 1px solid var(--color-border); border-radius: 8px; height: 40px; padding: 0 var(--space-md);
+  cursor: pointer; font-family: inherit;
+}

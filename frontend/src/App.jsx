@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './layout/AppLayout.jsx'
 import Inventory from './pages/Inventory.jsx'
 import ShoppingList from './pages/ShoppingList.jsx'
+import Recipes from './pages/Recipes.jsx'
 import Settings from './pages/Settings.jsx'
 import { useItems } from './hooks/useItems.js'
 
@@ -21,6 +22,7 @@ function AppInner() {
       <Routes>
         <Route path="/" element={<Inventory itemsApi={itemsApi} />} />
         <Route path="/shopping" element={<ShoppingList itemsApi={itemsApi} />} />
+        <Route path="/recipes" element={<Recipes />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

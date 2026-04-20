@@ -1,4 +1,4 @@
-import { House, ShoppingCart, Settings as SettingsIcon } from 'lucide-react'
+import { House, ShoppingCart, UtensilsCrossed, Settings as SettingsIcon } from 'lucide-react'
 import NavItem from './NavItem.jsx'
 import AccessBanner from '../components/AccessBanner/AccessBanner.jsx'
 import { useShoppingList } from '../hooks/useShoppingList.js'
@@ -6,7 +6,8 @@ import styles from './AppLayout.module.css'
 
 /**
  * Fixed left sidebar (220px) + scrollable main content area.
- * Matches 01-UI-SPEC §Component Inventory → AppLayout.
+ * Matches 01-UI-SPEC §Component Inventory → AppLayout, extended in Phase 5
+ * with the Recipes nav item.
  *
  * AccessBanner renders above <main> — it is purely additive and does not
  * block the app shell from rendering.
@@ -32,6 +33,7 @@ export default function AppLayout({ children }) {
               label="Shopping List"
               badge={lowStockCount}
             />
+            <NavItem to="/recipes" icon={UtensilsCrossed} label="Recipes" />
             <NavItem to="/settings" icon={SettingsIcon} label="Settings" />
           </ul>
         </nav>
