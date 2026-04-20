@@ -39,12 +39,12 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from db.database import get_db
-from models import Item, Recipe, RecipeIngredient
+from models import Item, Recipe, RecipeIngredient, ShoppingListEntry, QuantityMode, StockStatus, Transaction
 from schemas.recipe import (
     RecipeCreate,
     RecipeUpdate,
@@ -53,6 +53,10 @@ from schemas.recipe import (
     RecipeIngredientIn,
     RecipeIngredientResponse,
     RecipeImportUrlBody,
+    IngredientCheckItem,
+    IngredientCheckResponse,
+    RecipeCookIngredient,
+    RecipeCookBody,
 )
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
@@ -454,3 +458,253 @@ async def import_recipe_from_url(body: RecipeImportUrlBody) -> RecipeResponse:
         updated_at=now,
         ingredients=parsed_ingredients,
     )
+
+
+# ---------------------------------------------------------------------------
+# Ingredient check + add-missing-to-shopping-list (RECP-03, RECP-04)
+# ---------------------------------------------------------------------------
+
+
+def _find_matched_item(db: Session, item_id: Optional[int], name: str) -> Optional[Item]:
+    """Resolve ingredient -> Item. Prefer explicit item_id; fall back to name match."""
+    if item_id is not None:
+        item = db.query(Item).filter(Item.id == item_id).first()
+        if item is not None and not item.archived:
+            return item
+        # Archived or gone -- no match.
+        return None
+    if not name:
+        return None
+    pattern = f"%{_escape_like(name).lower()}%"
+    row = (
+        db.query(Item)
+        .filter(Item.archived == False)  # noqa: E712
+        .filter(func.lower(Item.name).like(pattern, escape="\\"))
+        .order_by(Item.name)
+        .first()
+    )
+    return row
+
+
+def _classify_ingredient(db: Session, ingredient: RecipeIngredient) -> IngredientCheckItem:
+    """Return an IngredientCheckItem for a single recipe ingredient (D-08, D-09)."""
+    matched = _find_matched_item(db, ingredient.item_id, ingredient.name)
+
+    if matched is None:
+        return IngredientCheckItem(
+            ingredient_id=ingredient.id,
+            name=ingredient.name,
+            quantity=ingredient.quantity,
+            unit=ingredient.unit,
+            item_id=None,
+            matched_item_name=None,
+            status="missing",
+            unit_mismatch=False,
+        )
+
+    unit_mismatch = False
+    if matched.quantity_mode == QuantityMode.STATUS:
+        if matched.status == StockStatus.HAVE:
+            status = "have"
+        elif matched.status == StockStatus.LOW:
+            status = "low"
+        else:  # OUT or None
+            status = "missing"
+        if ingredient.unit:
+            unit_mismatch = True
+    else:
+        # EXACT mode
+        available = matched.quantity or 0
+        if ingredient.quantity is None:
+            status = "have" if available > 0 else "missing"
+        else:
+            status = "have" if available >= ingredient.quantity else "low"
+
+        if ingredient.unit:
+            # Inventory has no unit field; any recipe-side unit is a mismatch.
+            unit_mismatch = True
+            if status == "have":
+                status = "low"  # Pitfall 7 -- downgrade so user verifies manually.
+
+    return IngredientCheckItem(
+        ingredient_id=ingredient.id,
+        name=ingredient.name,
+        quantity=ingredient.quantity,
+        unit=ingredient.unit,
+        item_id=matched.id,
+        matched_item_name=matched.name,
+        status=status,
+        unit_mismatch=unit_mismatch,
+    )
+
+
+@router.get("/{recipe_id}/check", response_model=IngredientCheckResponse)
+def check_ingredients(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+) -> IngredientCheckResponse:
+    """RECP-03: per-ingredient availability check (D-07, D-08, D-09)."""
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    items = [_classify_ingredient(db, ing) for ing in recipe.ingredients]
+    missing_count = sum(1 for i in items if i.status in ("missing", "low"))
+    return IngredientCheckResponse(
+        recipe_id=recipe.id,
+        ingredients=items,
+        missing_count=missing_count,
+    )
+
+
+def _next_sort_order(db: Session) -> int:
+    max_sort = db.query(func.max(ShoppingListEntry.sort_order)).scalar()
+    return (max_sort or 0) + 1
+
+
+@router.post("/{recipe_id}/add-missing")
+def add_missing_to_shopping_list(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+) -> dict:
+    """RECP-04: add every 'missing'/'low' ingredient to shopping_list (D-10).
+
+    Linked (item_id) -> new ShoppingListEntry(item_id=..., free_text=None).
+    Unlinked        -> new ShoppingListEntry(item_id=None, free_text=ingredient.name).
+    Duplicates skipped (same item_id OR same free_text already on list).
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    added = 0
+    skipped = 0
+
+    for ingredient in recipe.ingredients:
+        classified = _classify_ingredient(db, ingredient)
+        if classified.status not in ("missing", "low"):
+            continue  # 'have' -- nothing to buy
+
+        if classified.item_id is not None:
+            # Linked ingredient -- dedupe against existing item_id
+            existing = (
+                db.query(ShoppingListEntry)
+                .filter(ShoppingListEntry.item_id == classified.item_id)
+                .first()
+            )
+            if existing is not None:
+                skipped += 1
+                continue
+            entry = ShoppingListEntry(
+                item_id=classified.item_id,
+                added_manually=True,
+                sort_order=_next_sort_order(db),
+                free_text=None,
+            )
+            db.add(entry)
+            db.flush()  # so _next_sort_order on the next iteration sees this row
+            added += 1
+        else:
+            # Unlinked ingredient -- dedupe against existing free_text (case-insensitive)
+            name = (ingredient.name or "").strip()
+            if not name:
+                skipped += 1
+                continue
+            existing = (
+                db.query(ShoppingListEntry)
+                .filter(func.lower(ShoppingListEntry.free_text) == name.lower())
+                .first()
+            )
+            if existing is not None:
+                skipped += 1
+                continue
+            entry = ShoppingListEntry(
+                item_id=None,
+                added_manually=True,
+                sort_order=_next_sort_order(db),
+                free_text=name,
+            )
+            db.add(entry)
+            db.flush()
+            added += 1
+
+    db.commit()
+    return {"added": added, "skipped": skipped}
+
+
+# ---------------------------------------------------------------------------
+# Cook-and-deduct (RECP-05, D-11/D-12/D-13/D-14)
+# ---------------------------------------------------------------------------
+
+
+def _step_down_status(current: Optional[StockStatus]) -> StockStatus:
+    """D-14: HAVE -> LOW, LOW -> OUT, OUT -> OUT (clamp). None treated as OUT."""
+    if current == StockStatus.HAVE:
+        return StockStatus.LOW
+    return StockStatus.OUT  # LOW, OUT, or None
+
+
+def _cook_record_txn(
+    db: Session,
+    item_id: int,
+    amount: float,
+    user,
+) -> None:
+    """Write an append-only Transaction for a cook deduction (D-14)."""
+    txn = Transaction(
+        item_id=item_id,
+        action="cook",
+        delta=-float(amount),
+        ha_user_id=user.id if user else None,
+        ha_user_name=user.name if user else None,
+    )
+    db.add(txn)
+
+
+@router.post("/{recipe_id}/cook")
+def cook_recipe(
+    recipe_id: int,
+    body: RecipeCookBody,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    """RECP-05: deduct ingredient quantities from inventory (D-14).
+
+    Client is expected to OMIT unlinked ingredients from the deductions list
+    (D-13). The backend validates that every submitted deduction references
+    a real ingredient of this recipe and a real (non-archived) inventory item.
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    user = getattr(request.state, "user", None)
+
+    # Build lookup of this recipe's ingredients for fast ingredient_id validation
+    ingredient_ids = {ing.id for ing in recipe.ingredients}
+
+    for deduction in body.deductions:
+        if deduction.ingredient_id not in ingredient_ids:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Ingredient {deduction.ingredient_id} does not belong to recipe {recipe_id}",
+            )
+
+        item = db.query(Item).filter(Item.id == deduction.item_id).first()
+        if item is None or item.archived:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Item {deduction.item_id} not found",
+            )
+
+        if item.quantity_mode == QuantityMode.EXACT:
+            current = item.quantity or 0
+            item.quantity = max(0, current - int(deduction.amount))
+        else:
+            # STATUS mode: one step-down per cook action, regardless of amount.
+            item.status = _step_down_status(item.status)
+
+        _cook_record_txn(db, item.id, deduction.amount, user)
+
+    db.commit()
+    return {"ok": True, "deducted": len(body.deductions), "recipe_id": recipe.id}
