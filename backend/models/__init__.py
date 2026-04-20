@@ -93,11 +93,47 @@ class Transaction(Base):
 class ShoppingListEntry(Base):
     __tablename__ = "shopping_list"
     id = Column(Integer, primary_key=True)
-    item_id = Column(Integer, ForeignKey("items.id"), nullable=False)
+    item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     added_manually = Column(Boolean, nullable=False, default=False)
     checked_off = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     sort_order = Column(Integer, nullable=True)
+    free_text = Column(String, nullable=True)
+
+
+class Recipe(Base):
+    """A cookable recipe. Phase 5 — RECP-01."""
+    __tablename__ = "recipes"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    instructions = Column(Text, nullable=True)
+    source_url = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    ingredients = relationship(
+        "RecipeIngredient",
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+        order_by="RecipeIngredient.sort_order",
+    )
+
+
+class RecipeIngredient(Base):
+    """A single ingredient row in a recipe. Phase 5 — RECP-01, D-01.
+
+    item_id is nullable: ingredients may be linked to an inventory item
+    (D-02/D-07) or left unlinked permanently (D-03).
+    """
+    __tablename__ = "recipe_ingredients"
+    id = Column(Integer, primary_key=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=False)
+    name = Column(String, nullable=False)
+    quantity = Column(Float, nullable=True)
+    unit = Column(String, nullable=True)
+    item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    sort_order = Column(Integer, nullable=True)
+    recipe = relationship("Recipe", back_populates="ingredients")
+    item = relationship("Item")
 
 
 __all__ = [
@@ -108,4 +144,6 @@ __all__ = [
     "Item",
     "Transaction",
     "ShoppingListEntry",
+    "Recipe",
+    "RecipeIngredient",
 ]
