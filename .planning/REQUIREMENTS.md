@@ -70,8 +70,8 @@
 
 ### HA Display Integration
 
-- [ ] **HA-01**: App exposes a REST endpoint that HA can poll for current stock levels as sensor entities
-- [ ] **HA-02**: App can be embedded as an iframe in HA Lovelace dashboards
+- [x] **HA-01**: App exposes a REST endpoint that HA can poll for current stock levels as sensor entities
+- [x] **HA-02**: App can be embedded as an iframe in HA Lovelace dashboards
 
 ---
 
@@ -171,8 +171,8 @@
 | USER-01 | Phase 2 | Complete |
 | USER-02 | Phase 2 | Complete |
 | USER-03 | Phase 2 | Complete |
-| HA-01 | Phase 6 | Pending |
-| HA-02 | Phase 6 | Pending |
+| HA-01 | Phase 6 | Complete |
+| HA-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 38 total

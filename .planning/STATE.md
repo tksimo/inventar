@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-24T07:28:20.040Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-04-24T07:41:11.744Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 29
-  completed_plans: 27
-  percent: 93
+  completed_plans: 28
+  percent: 97
 ---
 
 # Project State: Inventar
@@ -26,21 +26,21 @@ progress:
 
 **Current milestone:** 1 — Home inventory webapp as HA add-on
 
-**Current focus:** Phase 05 — recipes
+**Current focus:** Phase 06 — ha-display-integration
 
 ---
 
 ## Current Position
 
-Phase: 05 (recipes) — EXECUTING
-Plan: 1 of 5
+Phase: 06 (ha-display-integration) — EXECUTING
+Plan: 1 of 2
 **Phase:** 6
 **Plan:** Not started
-**Status:** Ready to execute
+**Status:** Executing Phase 06
 
 **Progress:**
 
-[█████████░] 92%
+[██████████] 97%
 [          ] Phase 1: Add-on Scaffolding
 [          ] Phase 2: Core Inventory
 [          ] Phase 3: Barcode Scanning
@@ -71,6 +71,7 @@ Plan: 1 of 5
 | Phase 02 P03 | 6min | 3 tasks | 17 files |
 | Phase 02-core-inventory P02 | 25min | 2 tasks | 7 files |
 | Phase 02-core-inventory P09 | 10min | 2 tasks | 4 files |
+| Phase 06 P01 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Plan: 1 of 5
 | Alembic data migration for ORG-01 seed | Migration 0002 seeds 4 default categories — runs once at upgrade, idempotent via INSERT OR IGNORE, survives restarts |
 | use_enum_values=True in Pydantic v2 ConfigDict | Serializes QuantityMode/StockStatus as lowercase strings ('exact', 'status', 'have', 'low', 'out') without custom serializers |
 | CategoryCreate omits is_default | Clients cannot self-promote categories to default status; only migration 0002 sets is_default=1 (T-02-02) |
+| CORSMiddleware before IngressUserMiddleware with allow_origins=wildcard+credentials=False | Starlette reverse stacking — CORS must be outermost; wildcard+no-credentials is spec-safe for public read-only data (T-06-02) |
+| out_ids exclusion set prevents double-counting | Out-of-stock items excluded from low-stock filter by ID set — an item with quantity=0 and reorder_threshold set appears only in out_of_stock_items (Pitfall 4) |
 
 ### Critical Implementation Constraints
 
@@ -130,9 +133,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-24T07:06:13.200Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-ha-display-integration/06-CONTEXT.md
+Last session: 2026-04-24T07:41:11.737Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None
 
 To resume: `/clear` then `/gsd-execute-phase 1`
 

@@ -105,7 +105,7 @@
   1. A HA REST sensor configured with the add-on's summary endpoint shows current low-stock and out-of-stock counts as sensor state values
   2. The app UI renders correctly when embedded as an iframe card in a HA Lovelace dashboard
 **Plans**: 2 plans
-  - [ ] 06-01-PLAN.md — Backend: /api/ha/summary endpoint + CORS + Wave 0 tests (HA-01, HA-02 header verification)
+  - [x] 06-01-PLAN.md — Backend: /api/ha/summary endpoint + CORS + Wave 0 tests (HA-01, HA-02 header verification)
   - [ ] 06-02-PLAN.md — README HA integration section + human-verify iframe render (HA-02 phase gate)
 
 ---
@@ -119,7 +119,7 @@
 | 3. Barcode Scanning | 0/? | Not started | - |
 | 4. Shopping & Restock | 0/4 | Not started | - |
 | 5. Recipes | 0/5 | Not started | - |
-| 6. HA Display Integration | 0/2 | Not started | - |
+| 6. HA Display Integration | 1/2 | In Progress|  |
 
 ---
 
