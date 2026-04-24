@@ -10,13 +10,27 @@ from __future__ import annotations
 import os
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 
 from middleware.ingress import IngressUserMiddleware
-from routers import health, items, categories, locations, access_info, barcode, shopping_list, recipes
+from routers import health, items, categories, locations, access_info, barcode, shopping_list, recipes, ha_display
 
 app = FastAPI(title="Inventar", version="0.1.0")
+
+# CORS: allow cross-origin GETs for browser-based HA dashboard cards (T-06-02).
+# allow_credentials=False is required when allow_origins=["*"] per the CORS spec.
+# allow_methods=["GET"] keeps this read-only.
+# Must be registered BEFORE IngressUserMiddleware (Starlette middleware stacks in
+# reverse registration order — outermost middleware is registered first).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 # Middleware: populate request.state.user from HA ingress headers
 app.add_middleware(IngressUserMiddleware)
@@ -30,6 +44,7 @@ app.include_router(access_info.router)
 app.include_router(barcode.router)
 app.include_router(shopping_list.router)
 app.include_router(recipes.router)
+app.include_router(ha_display.router)
 
 # SPA static mount + client-route fallback.
 #
