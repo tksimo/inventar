@@ -25,6 +25,56 @@ Phase 2.
 - **Supervisor contract:** `config.yaml` + `build.yaml` + `Dockerfile`
   + `run.sh` at repo root. `arch: [amd64]` in Phase 1 (aarch64 deferred).
 
+## Home Assistant Integration
+
+The add-on exposes `GET /api/ha/summary` for HA REST sensor entities,
+and the app UI embeds cleanly as a Lovelace iframe card. Both integrations
+use `http://homeassistant.local:8099` — the direct port (INFRA-05), not
+the ingress panel URL, which requires HA authentication.
+
+### REST sensor (HA-01)
+
+```yaml
+# configuration.yaml
+sensor:
+  - platform: rest
+    name: Inventar Low Stock
+    resource: http://homeassistant.local:8099/api/ha/summary
+    value_template: "{{ value_json.low_stock_count }}"
+    scan_interval: 60
+    json_attributes:
+      - low_stock_items
+      - out_of_stock_count
+      - out_of_stock_items
+      - total_items
+```
+
+`scan_interval: 60` is recommended; the default 30s is unnecessarily frequent for inventory data.
+
+### Lovelace iframe card (HA-02)
+
+```yaml
+type: iframe
+url: http://homeassistant.local:8099
+title: Inventar
+```
+
+The direct port URL is used (not the ingress panel URL) because Lovelace iframes cannot traverse HA ingress authentication.
+
+### Response shape
+
+```json
+{
+  "low_stock_count": 3,
+  "out_of_stock_count": 1,
+  "total_items": 42,
+  "low_stock_items": ["Coffee", "Milk", "Oat milk"],
+  "out_of_stock_items": ["Pasta"]
+}
+```
+
+`low_stock_items` lists items where status is LOW, or quantity is at/below the reorder threshold. `out_of_stock_items` lists items where status is OUT or quantity is 0. Archived items are excluded from all counts.
+
 ## Local build workflow
 
 The Docker build COPIES a pre-built `frontend/dist/` into the image
