@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-04-24T07:41:11.744Z"
+stopped_at: "Checkpoint 06-02 Task 2: awaiting human verify of iframe in live HA Lovelace"
+last_updated: "2026-04-24T07:43:23.604Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -133,8 +133,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-24T07:41:11.737Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-04-24T07:43:23.597Z
+Stopped at: Checkpoint 06-02 Task 2: awaiting human verify of iframe in live HA Lovelace
 Resume file: None
 
 To resume: `/clear` then `/gsd-execute-phase 1`
